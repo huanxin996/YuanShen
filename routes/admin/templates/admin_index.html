@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>API 管理后台</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/admin/static/css/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="header-title">API 管理系统</div>
+    </header>
+    <div class="container">
+        <aside class="sidebar">
+            <nav>
+                <ul>
+                    <li><a href="/admin/manage" class="active"><i class="fas fa-list"></i> 路由管理</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <div class="dashboard">
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-server"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ api_count }}</div>
+                            <div class="stat-label">API总数</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                        <div class="stat-content">
+                            <div class="stat-value">{{ total_calls }}</div>
+                            <div class="stat-label">总访问量</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="top-apis-section">
+                    <h3><i class="fas fa-trophy"></i> 热门API排行</h3>
+                    <div class="top-apis-list">
+                        {% for api, count in top_apis %}
+                        <div class="top-api-item">
+                            <div class="top-api-rank">{{ loop.index }}</div>
+                            <div class="top-api-info">
+                                <div class="top-api-path">{{ api }}</div>
+                                <div class="top-api-count">{{ count }} 次调用</div>
+                                <div class="top-api-bar">
+                                    <div class="top-api-bar-fill" style="width: {{ (count / top_apis[0][1] * 100) if top_apis[0][1] > 0 else 0 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="no-data">暂无访问数据</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section">
+                <h2><i class="fas fa-cog"></i> 路由状态管理</h2>
+                <form method='post' action="/admin/action">
+                    <table>
+                        <tr>
+                            <th>路由</th>
+                            <th>状态</th>
+                            <th>访问量</th>
+                            <th>操作</th>
+                        </tr>
+                        {% for path, status, action, btn_class, btn_text, access_count in route_list %}
+                        <tr>
+                            <td class="path-cell">{{ path }}</td>
+                            <td class="status-cell">
+                                <span class="status-badge {{ 'disabled' if status == '禁用' else 'enabled' }}">
+                                    {{ status }}
+                                </span>
+                            </td>
+                            <td class="count-cell">{{ access_count }}</td>
+                            <td class="action-cell">
+                                <button class="{{ btn_class }}" name="action" value="{{ action }}:{{ path }}" type="submit">
+                                    <i class="fas fa-{{ 'check-circle' if btn_text == '启用' else 'ban' }}"></i> {{ btn_text }}
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </table>
+                </form>
+            </div>
+        </main>
+    </div>
+    <footer>
+        <div class="footer-content">
+            &copy; 2025 API 管理后台 | Made with <i class="fas fa-heart"></i> by HuanXin996
+        </div>
+    </footer>
+</body>
+</html>
