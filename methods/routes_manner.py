@@ -2,13 +2,13 @@ import os, importlib, re
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from methods.globalvar import GlobalVars
 from typing import Dict, Set, List, Tuple, Pattern, Optional
 from loguru import logger as log
-from config import project_root
+from config import project_root,favicon_path
 
 route_protection_middleware_instance = None
 
@@ -225,7 +225,8 @@ class RouteManager:
             removed_count = len(app.routes)
             app.routes.clear()
             log.info(f"已移除所有 {removed_count} 个路由，包括默认路由")
-            
+        
+        self.register_favicon_route(app)
         self._protection_updated = False
         return removed_count
 
@@ -235,6 +236,8 @@ class RouteManager:
         
         if clear_existing:
             self.clear_routes(app)
+        else:
+            self.register_favicon_route(app)
         
         routes_before = self._count_routes(app)
         
@@ -303,6 +306,51 @@ class RouteManager:
             log.error(f"找不到路由模块: {module_name}")
             return False
     
+    
+
+    def register_favicon_route(self, app: FastAPI) -> None:
+        """注册favicon.ico路由"""
+        favicon_path_ = favicon_path
+        if not favicon_path_ or not Path(favicon_path_).exists():
+            favicon_path_ = project_root / "static" / "favicon.ico"
+            
+            if not favicon_path_.exists():
+                favicon_path_ = project_root / "routes" / "static" / "favicon.ico"
+                
+                if not favicon_path_.exists():
+                    favicon_path_ = project_root / "favicon.ico"
+        
+        routes_to_keep = []
+        for route in app.routes:
+            if not (hasattr(route, "path") and route.path == "/favicon.ico"):
+                routes_to_keep.append(route)
+        
+        if len(routes_to_keep) != len(app.routes):
+            app.routes.clear()
+            app.routes.extend(routes_to_keep)
+            log.debug("已移除旧的favicon路由")
+        
+        if Path(favicon_path_).exists():
+            log.info(f"找到favicon.ico文件: {favicon_path_}")
+            
+            @app.get("/favicon.ico", include_in_schema=False)
+            async def get_favicon():
+                return FileResponse(str(favicon_path_))
+            
+            log.info("已成功注册favicon.ico路由")
+        else:
+            log.warning("未能找到favicon.ico文件，将返回空响应")
+            
+            @app.get("/favicon.ico", include_in_schema=False)
+            async def empty_favicon():
+                return PlainTextResponse("")
+            
+            log.info("已注册空的favicon.ico响应路由")
+        
+        mw = self.get_protection_middleware(app)
+        if mw and "/favicon.ico" not in mw.allowed_paths:
+            mw.allowed_paths.add("/favicon.ico")
+
     def register_static_route(self, app: FastAPI, path: str, directory: str, name: str = "static", auto_register_alternate_path: bool = False):
         """
         注册静态资源路由

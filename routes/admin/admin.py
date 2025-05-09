@@ -38,10 +38,12 @@ async def admin_manage(request: Request):
     
     top_apis = sorted(api_stats.items(), key=lambda x: x[1], reverse=True)[:3]
     
-    api_count = len([r for r in routes if not r.startswith("/admin") and not r.startswith("/static")])
+    api_count = len([r for r in routes if not r.startswith("/admin") and not r.startswith("/static") and not r.startswith("/favicon.ico")])
     
     for path in sorted(routes):
         if path.startswith("/admin"):
+            continue
+        if path.startswith("/favicon.ico"):
             continue
         status = "禁用" if path in disabled else "启用"
         action = "enable" if path in disabled else "disable"

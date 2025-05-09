@@ -2,6 +2,7 @@ import uvicorn, asyncio, signal,os,sys
 from api.maimai50.maimaidx_music import initialize_maimai_data
 from loguru import logger as log
 from fastapi import FastAPI
+from config import project_root
 from methods.routes_manner import route_manager
 from methods.loggers import get_log_config
 
@@ -66,15 +67,35 @@ async def run_server_async():
 
     # 初始化应用
     await init_app()
+
+    # 证书配置
+    ssl_dir = project_root / "ssl"
+    cert_path = ssl_dir / "cert.pem"
+    key_path = ssl_dir / "cert.key"
     
-    log.info(f"服务器正在启动... 运行环境: {'Linux/Ubuntu' if sys.platform.startswith('linux') else 'Windows'}")
+    ssl_enabled = cert_path.exists() and key_path.exists()
+    
+    if ssl_enabled:
+        log.info(f"找到SSL证书，将以HTTPS模式启动")
+        ssl_config = {
+            "ssl_certfile": str(cert_path),
+            "ssl_keyfile": str(key_path),
+        }
+        protocol = "HTTPS"
+    else:
+        log.warning(f"SSL证书不存在，将以HTTP模式启动")
+        ssl_config = {}
+        protocol = "HTTP"
+    
+    log.info(f"服务器正在启动... 运行环境: {'Linux/Ubuntu' if sys.platform.startswith('linux') else 'Windows'}, 协议: {protocol}")
     config = uvicorn.Config(
         app,
         host="0.0.0.0",
         port=9090,
         log_level="info",
         reload=False,
-        log_config=custom_log_config
+        log_config=custom_log_config,
+        **ssl_config
     )
     server = uvicorn.Server(config)
     
