@@ -1,3 +1,6 @@
 {
-  "api_count:/maimai/b50": 1
+  "api_count:/maimai/b50": 2,
+  "disabled_routes": [
+    "/maimai/b50"
+  ]
 }

@@ -17,18 +17,23 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
     def __init__(self, app: FastAPI = None):
         super().__init__(app)
         self.allowed_paths: Set[str] = set()
-        self.disabled_routes: Set[str] = set()
+        self.disabled_routes: Set[str] = set(GlobalVars.get("disabled_routes", []))
         self.pattern_paths: List[Tuple[Pattern, str]] = []
         self.default_paths: List[str] = ["/favicon.ico"]
         log.info(f"路由保护中间件已创建，默认允许 {len(self.default_paths)} 个系统路径")
 
+    def _save_disabled_routes(self):
+        GlobalVars.set("disabled_routes", list(self.disabled_routes))
+
     def disable_route(self, path: str):
         self.disabled_routes.add(path)
+        self._save_disabled_routes()
         log.info(f"已禁用路由: {path}")
 
     def enable_route(self, path: str):
         if path in self.disabled_routes:
             self.disabled_routes.remove(path)
+            self._save_disabled_routes()
             log.info(f"已启用路由: {path}")
 
     def is_route_disabled(self, path: str) -> bool:
@@ -74,15 +79,6 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
                         
                         file_web_path = file_web_path.replace("//", "/")
                         self.allowed_paths.add(file_web_path)
-                        
-                        # 处理替代路径（如 /static/css/admin.css 对应 /admin/static/css/admin.css）
-                        """
-                        parts = web_path.strip("/").split("/")
-                        if len(parts) > 1:
-                            alt_base_path = "/" + parts[-1]
-                            alt_file_path = file_web_path.replace(web_path, alt_base_path)
-                            self.allowed_paths.add(alt_file_path)
-                        """
                 
                 log.debug(f"已添加静态目录 {directory} 下的所有文件路径到允许列表")
         
@@ -103,7 +99,7 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
         
         if self.is_route_disabled(path):
             log.warning(f"访问被禁用的路由: {path}")
-            return PlainTextResponse("该API已被禁用", status_code=403)
+            return PlainTextResponse("该API已被禁用，请使用其他API", status_code=403)
         
         if path in self.allowed_paths:
             response = await call_next(request)
@@ -145,7 +141,6 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
             "你瞅啥，不要乱访问好不好？",
             status_code=403
         )
-
 
 
 class RouteManager:
