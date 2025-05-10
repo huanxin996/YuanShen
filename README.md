@@ -12,6 +12,19 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 - **强大的管理后台**：可视化操作、权限控制、实时监控
 - **安全与访问控制**：内置路由保护中间件，静态资源与管理端独立隔离
 - **高效日志系统**：日志按日期自动轮转，便于追踪与审计
+- **系统资源监控**：实时监控服务器CPU、内存占用及运行环境
+
+---
+
+## 🆕 更新内容
+
+### 2025年5月更新
+
+- **改进数据库操作**：重构 GlobalVars 全局变量存储系统，引入表管理机制
+- **API 统计优化**：API 调用统计存储在专用表中，提高高并发访问性能
+- **每日趋势分析**：增加 API 调用的日统计数据，支持历史趋势展示
+- **系统监控面板**：管理后台增加系统信息展示，包括CPU、内存使用率等
+- **Docker容器支持**：自动检测并适配容器环境，显示运行环境信息
 
 ---
 
@@ -23,6 +36,8 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 - 支持标准、Bypass、理论值、累计分数、高分、AP、FC 等多种视图
 - 支持曲目信息查询、图片生成等功能
 - 典型接口如 `/maimai/b50`、`/maimai/minfo` 等
+- 基于 [nonebot-plugin-maimaidx](https://github.com/Yuri-YuzuChaN/nonebot-plugin-maimaidx) 项目改造开发
+- 静态资源文件请从原项目中获取，并放在main.py同级目录下
 
 ### 2. `admin` 管理模块
 
@@ -30,6 +45,7 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 - 支持 API 路由启用/禁用、访问统计、热门排行等功能
 - 可视化展示 API 总数、总访问量、访问量前三的 API
 - 支持一键操作 API 状态，安全高效
+- 系统资源监控，包括CPU使用率、内存占用、运行环境等
 
 ---
 
@@ -38,8 +54,6 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 ### 前提条件
 
 - Python 3.8+
-- 舞萌DX Token
-- static 数据文件
 
 ### 安装步骤
 
@@ -61,7 +75,7 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
     编辑 `config.py` 文件，设置必要参数：
 
     ```python
-    maimaitoken = "你的水鱼token"      # 舞萌DX账号Token
+    maimaitoken = "你的水鱼token"      # 水鱼Token
     admin_token = "你的管理员token"    # 管理员访问Token
     log_level = "info"                # 日志级别，可选值：debug, info, warning, error
     ```
@@ -118,13 +132,16 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 |-----------------|------|----------------------------|
 | `/admin/manage` | GET  | 访问管理界面               |
 | `/admin/action` | POST | 启用/禁用指定API           |
+| `/admin/stats`  | GET  | 查看API统计和系统信息      |
 
 **管理后台功能：**
 
 - 查看 API 总数和总调用次数
 - 热门 API 排行（调用频率最高的3个API）
+- API 调用趋势图（最近7天）
 - 启用/禁用特定 API 端点
-- 查看每个 API 的访问次数
+- 系统资源监控（CPU、内存使用率）
+- 运行环境信息（系统类型、容器状态、FastAPI版本）
 
 ---
 
@@ -169,4 +186,22 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
     - 确认程序有写入权限
     - 检查磁盘空间
 
+4. **系统监控数据不准确**
+    - 在容器或虚拟环境中，某些系统信息可能无法准确获取
+    - 确保已安装 psutil 库：`pip install psutil`
+
 ---
+
+## 🙏 鸣谢
+
+- [Yuri-YuzuChaN](https://github.com/Yuri-YuzuChaN) - maimai 模块原作者，提供了优秀的 [nonebot-plugin-maimaidx](https://github.com/Yuri-YuzuChaN/nonebot-plugin-maimaidx) 项目
+- [FastAPI](https://fastapi.tiangolo.com/) - 高性能的 Python Web 框架
+- 所有为本项目提供反馈、建议和贡献的开发者和用户
+
+---
+
+## 📄 许可证
+
+本项目基于 MIT 许可证开源。
+
+maimai 相关模块基于 [nonebot-plugin-maimaidx](https://github.com/Yuri-YuzuChaN/nonebot-plugin-maimaidx) 项目修改，请遵循原项目的许可要求。

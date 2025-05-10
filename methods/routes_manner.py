@@ -1,4 +1,4 @@
-import os, importlib, re
+import os, importlib, re,time
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, Request
@@ -20,6 +20,14 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
         self.disabled_routes: Set[str] = set(GlobalVars.get("disabled_routes", []))
         self.pattern_paths: List[Tuple[Pattern, str]] = []
         self.default_paths: List[str] = ["/favicon.ico"]
+        
+        # 初始化时检查api_stats表是否存在
+        self._api_stats_table_checked = GlobalVars.table_exists("api_stats")
+        if not self._api_stats_table_checked:
+            log.info("创建API统计表")
+            GlobalVars.create_table("api_stats")
+            self._api_stats_table_checked = True
+            
         log.info(f"路由保护中间件已创建，默认允许 {len(self.default_paths)} 个系统路径")
 
     def _save_disabled_routes(self):
@@ -107,20 +115,32 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
             if (not path.startswith("/admin") and 
                 not path.startswith("/static") and 
                 not path.endswith((".css", ".js", ".ico", ".png", ".jpg", ".jpeg", ".gif"))):
+
+                today_str = time.strftime("%Y-%m-%d")
                 
                 api_count_key = f"api_count:{path}"
-                current_count = GlobalVars.get(api_count_key, 0)
-                GlobalVars.set(api_count_key, current_count + 1)
-                log.debug(f"API访问计数: {path} -> {current_count + 1}")
+                current_count = GlobalVars.get_from_table("api_stats", api_count_key, 0)
+                GlobalVars.set_to_table("api_stats", api_count_key, current_count + 1)
+                
+                api_daily_key = f"api_daily_stats:{path}"
+                daily_stats = GlobalVars.get_from_table("api_stats", api_daily_key, {})
+                if today_str in daily_stats:
+                    daily_stats[today_str] += 1
+                else:
+                    daily_stats[today_str] = 1
+                GlobalVars.set_to_table("api_stats", api_daily_key, daily_stats)
+                
+                total_daily_key = "api_total_daily_stats"
+                total_daily_stats = GlobalVars.get_from_table("api_stats", total_daily_key, {})
+                if today_str in total_daily_stats:
+                    total_daily_stats[today_str] += 1
+                else:
+                    total_daily_stats[today_str] = 1
+                GlobalVars.set_to_table("api_stats", total_daily_key, total_daily_stats)
+                
+                log.debug(f"API访问计数: {path} -> {current_count + 1}, 今日: {daily_stats.get(today_str, 0)}")
             
             return response
-        
-        parts = path.split('/')
-        if len(parts) > 2:
-            base_path = f"/{parts[1]}"
-            if f"{base_path}/{{path:path}}" in self.allowed_paths or f"{base_path}" in self.allowed_paths:
-                log.debug(f"允许访问静态资源子路径: {path}")
-                return await call_next(request)
         
         for pattern, original_path in self.pattern_paths:
             if pattern.match(path):
@@ -129,10 +149,33 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
                 if (not original_path.startswith("/admin") and 
                     not original_path.startswith("/static")):
                     
+                    if not GlobalVars.table_exists("api_stats"):
+                        log.info("创建API统计表")
+                        GlobalVars.create_table("api_stats")
+                    
+                    today_str = time.strftime("%Y-%m-%d")
+                    
                     api_count_key = f"api_count:{original_path}"
-                    current_count = GlobalVars.get(api_count_key, 0)
-                    GlobalVars.set(api_count_key, current_count + 1)
-                    log.debug(f"参数化API访问计数: {original_path} -> {current_count + 1}")
+                    current_count = GlobalVars.get_from_table("api_stats", api_count_key, 0)
+                    GlobalVars.set_to_table("api_stats", api_count_key, current_count + 1)
+                    
+                    api_daily_key = f"api_daily_stats:{original_path}"
+                    daily_stats = GlobalVars.get_from_table("api_stats", api_daily_key, {})
+                    if today_str in daily_stats:
+                        daily_stats[today_str] += 1
+                    else:
+                        daily_stats[today_str] = 1
+                    GlobalVars.set_to_table("api_stats", api_daily_key, daily_stats)
+                    
+                    total_daily_key = "api_total_daily_stats"
+                    total_daily_stats = GlobalVars.get_from_table("api_stats", total_daily_key, {})
+                    if today_str in total_daily_stats:
+                        total_daily_stats[today_str] += 1
+                    else:
+                        total_daily_stats[today_str] = 1
+                    GlobalVars.set_to_table("api_stats", total_daily_key, total_daily_stats)
+                    
+                    log.debug(f"参数化API访问计数: {original_path} -> {current_count + 1}, 今日: {daily_stats.get(today_str, 0)}")
                 
                 return response
         

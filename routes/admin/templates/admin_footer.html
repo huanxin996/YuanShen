@@ -1,0 +1,62 @@
+        </main>
+    </div>
+    <footer>
+        <div class="footer-content">
+            &copy; 2025 API 管理后台 | Made with <i class="fas fa-heart"></i> by HuanXin996
+        </div>
+    </footer>
+
+    <script>
+        function createSnowflakes() {
+            const snowflakesContainer = document.getElementById('snowflakes');
+            if (!snowflakesContainer) return;
+            
+            const headerHeight = document.querySelector('header').offsetHeight;
+            const snowflakeCount = Math.floor(window.innerWidth / 25);
+            
+            snowflakesContainer.innerHTML = '';
+            
+            for (let i = 0; i < snowflakeCount; i++) {
+                const snowflake = document.createElement('div');
+                snowflake.className = 'snowflake';
+                snowflake.innerHTML = '❄';
+                
+                snowflake.style.left = `${Math.random() * 100}%`;
+                snowflake.style.animationDuration = `${Math.random() * 2 + 1}s`; // 1-3秒，更快的下落
+                snowflake.style.animationDelay = `${Math.random() * 2}s`;
+                snowflake.style.opacity = Math.random() * 0.7 + 0.3; // 0.3-1
+                snowflake.style.fontSize = `${Math.random() * 8 + 6}px`; // 6-14px
+                
+                snowflakesContainer.appendChild(snowflake);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            createSnowflakes();
+            window.addEventListener('resize', createSnowflakes);
+            
+            var searchInput = document.getElementById('search-input');
+            if (searchInput) {
+                document.querySelector('.search-button').addEventListener('click', function(e) {
+                    if (searchInput.value.trim() === '') {
+                        e.preventDefault();
+                        searchInput.focus();
+                    }
+                });
+                
+                if (searchInput.value.trim() !== '') {
+                    searchInput.classList.add('expanded');
+                }
+                
+                document.addEventListener('click', function(e) {
+                    if (!searchInput.contains(e.target) && 
+                        !document.querySelector('.search-button').contains(e.target) && 
+                        searchInput.value.trim() === '') {
+                        searchInput.blur();
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

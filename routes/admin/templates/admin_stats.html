@@ -1,0 +1,223 @@
+{% include 'admin_header.html' %}
+
+<div class="dashboard">
+    <div class="stats-container">
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-server"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ api_count }}</div>
+                <div class="stat-label">API总数</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ total_calls }}</div>
+                <div class="stat-label">总访问量</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-clock"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ uptime }}</div>
+                <div class="stat-label">运行时间</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon"><i class="fas fa-user-shield"></i></div>
+            <div class="stat-content">
+                <div class="stat-value">{{ disabled_count }}</div>
+                <div class="stat-label">已禁用API</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="content-section">
+    <h2><i class="fas fa-chart-pie"></i> API调用统计</h2>
+    <div class="chart-container">
+        <div class="chart-card">
+            <h3>API调用分布</h3>
+            <div id="api-pie-chart" class="chart"></div>
+        </div>
+        <div class="chart-card">
+            <h3>API访问趋势</h3>
+            <div id="api-trend-chart" class="chart"></div>
+        </div>
+    </div>
+</div>
+
+<div class="content-section">
+    <h2><i class="fas fa-list-ol"></i> API详细统计</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-rank">#</th>
+                    <th class="col-path">API路径</th>
+                    <th class="col-calls">调用次数</th>
+                    <th class="col-percent">占比</th>
+                    <th class="col-status">状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in api_stats %}
+                <tr>
+                    <td>{{ item.rank }}</td>
+                    <td class="path-cell">{{ item.path }}</td>
+                    <td>{{ item.count }}</td>
+                    <td>{{ "%.2f"|format(item.percent) }}%</td>
+                    <td>
+                        <span class="status-badge {{ item.status_class }}">
+                            {{ item.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" class="no-data">暂无API访问数据</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 存储数据到JSON变量 -->
+<script type="application/json" id="chart-data">
+{
+    "apiNames": {% if api_names %}{{ api_names|tojson }}{% else %}[]{% endif %},
+    "pieData": {% if pie_data %}{{ pie_data|tojson }}{% else %}[]{% endif %},
+    "timeLabels": {% if time_labels %}{{ time_labels|tojson }}{% else %}[]{% endif %},
+    "trendData": {% if trend_data %}{{ trend_data|tojson }}{% else %}[]{% endif %}
+}
+</script>
+
+<!-- 引入echarts图表库 -->
+<script src="/admin/static/js/echarts.min.js"></script>
+<script>
+// 获取数据，用更安全的方式
+document.addEventListener('DOMContentLoaded', function() {
+    // 从JSON数据块中获取数据，避免直接在JS中嵌入模板变量
+    var chartDataElement = document.getElementById('chart-data');
+    var chartData;
+    
+    try {
+        chartData = JSON.parse(chartDataElement.textContent);
+    } catch (error) {
+        console.error('解析图表数据失败:', error);
+        chartData = {
+            apiNames: [],
+            pieData: [],
+            timeLabels: [],
+            trendData: []
+        };
+    }
+    
+    // 提取数据
+    var apiNames = chartData.apiNames || [];
+    var pieData = chartData.pieData || [];
+    var timeLabels = chartData.timeLabels || [];
+    var trendData = chartData.trendData || [];
+    
+    // 初始化饼图
+    var pieChartElement = document.getElementById('api-pie-chart');
+    if (pieChartElement) {
+        var pieChart = echarts.init(pieChartElement);
+        var pieOption = {
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}: {c} ({d}%)'
+            },
+            legend: {
+                orient: 'vertical',
+                right: 10,
+                top: 'center',
+                data: apiNames
+            },
+            series: [
+                {
+                    name: 'API调用',
+                    type: 'pie',
+                    radius: ['40%', '70%'],
+                    avoidLabelOverlap: false,
+                    itemStyle: {
+                        borderRadius: 10,
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    },
+                    label: {
+                        show: false,
+                        position: 'center'
+                    },
+                    emphasis: {
+                        label: {
+                            show: true,
+                            fontSize: '18',
+                            fontWeight: 'bold'
+                        }
+                    },
+                    labelLine: {
+                        show: false
+                    },
+                    data: pieData
+                }
+            ]
+        };
+        pieChart.setOption(pieOption);
+    }
+    
+    // 初始化趋势图
+    var trendChartElement = document.getElementById('api-trend-chart');
+    if (trendChartElement) {
+        var trendChart = echarts.init(trendChartElement);
+        var trendOption = {
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: ['总调用量'],
+                top: 'top'
+            },
+            grid: {
+                left: '3%',
+                right: '4%',
+                bottom: '3%',
+                containLabel: true
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: timeLabels
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: [
+                {
+                    name: '总调用量',
+                    type: 'line',
+                    stack: 'Total',
+                    data: trendData,
+                    areaStyle: {},
+                    emphasis: {
+                        focus: 'series'
+                    }
+                }
+            ]
+        };
+        trendChart.setOption(trendOption);
+    }
+    
+    // 响应式调整
+    function resizeCharts() {
+        if (typeof pieChart !== 'undefined' && pieChart) pieChart.resize();
+        if (typeof trendChart !== 'undefined' && trendChart) trendChart.resize();
+    }
+    
+    // 窗口大小变化时调整图表
+    window.addEventListener('resize', resizeCharts);
+});
+</script>
+
+{% include 'admin_footer.html' %}
