@@ -1,62 +1,97 @@
-        </main>
+<footer class="main-footer">
+    <div class="footer-wave">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 150">
+            <path fill="var(--primary-light)" fill-opacity="0.2" d="M0,32L48,48C96,64,192,96,288,96C384,96,480,64,576,64C672,64,768,96,864,106.7C960,117,1056,107,1152,90.7C1248,75,1344,53,1392,42.7L1440,32L1440,0L1392,0C1344,0,1248,0,1152,0C1056,0,960,0,864,0C768,0,672,0,576,0C480,0,384,0,288,0C192,0,96,0,48,0L0,0Z"></path>
+        </svg>
     </div>
-    <footer>
-        <div class="footer-content">
-            &copy; 2025 API 管理后台 | Made with <i class="fas fa-heart"></i> by HuanXin996
+    
+    <div class="inner-waves">
+        <div class="wave wave1"></div>
+        <div class="wave wave2"></div>
+        <div class="wave wave3"></div>
+    </div>
+    
+    <div class="footer-content">
+        <div class="footer-left">
+            <div class="footer-logo">YS API</div>
         </div>
-    </footer>
-
-    <script>
-        function createSnowflakes() {
-            const snowflakesContainer = document.getElementById('snowflakes');
-            if (!snowflakesContainer) return;
-            
-            const headerHeight = document.querySelector('header').offsetHeight;
-            const snowflakeCount = Math.floor(window.innerWidth / 25);
-            
-            snowflakesContainer.innerHTML = '';
-            
-            for (let i = 0; i < snowflakeCount; i++) {
-                const snowflake = document.createElement('div');
-                snowflake.className = 'snowflake';
-                snowflake.innerHTML = '❄';
-                
-                snowflake.style.left = `${Math.random() * 100}%`;
-                snowflake.style.animationDuration = `${Math.random() * 2 + 1}s`; // 1-3秒，更快的下落
-                snowflake.style.animationDelay = `${Math.random() * 2}s`;
-                snowflake.style.opacity = Math.random() * 0.7 + 0.3; // 0.3-1
-                snowflake.style.fontSize = `${Math.random() * 8 + 6}px`; // 6-14px
-                
-                snowflakesContainer.appendChild(snowflake);
-            }
-        }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            createSnowflakes();
-            window.addEventListener('resize', createSnowflakes);
+        <div class="footer-right">
+            <div class="footer-links">
+                <a href="https://github.com/huanxin996/YuanShen" class="github-link" target="_blank">
+                    <i class="fab fa-github"></i>
+                    <span class="github-text">GitHub</span>
+                </a>
+            </div>
+            <div class="footer-copyright">
+                &copy; 2025 API 管理系统
+                <div class="footer-heart"><i class="fas fa-heart"></i> Made by HuanXin</div>
+            </div>
+        </div>
+    </div>
+    
+    <div id="top-notification" class="top-notification">
+        <i class="fas fa-info-circle"></i> 已到最顶端啦
+    </div>
+</footer>
+</main>
+</div>
+
+<!-- 引入页脚CSS和JS文件 -->
+<link rel="stylesheet" href="/admin/static/css/footer.css">
+<script src="/admin/static/js/footer.js"></script>
+
+<script>
+    function createSnowflakes() {
+        const snowflakesContainer = document.getElementById('snowflakes');
+        if (!snowflakesContainer) return;
+        
+        const headerHeight = document.querySelector('header').offsetHeight;
+        const snowflakeCount = Math.floor(window.innerWidth / 25);
+        
+        snowflakesContainer.innerHTML = '';
+        
+        for (let i = 0; i < snowflakeCount; i++) {
+            const snowflake = document.createElement('div');
+            snowflake.className = 'snowflake';
+            snowflake.innerHTML = '❄';
             
-            var searchInput = document.getElementById('search-input');
-            if (searchInput) {
-                document.querySelector('.search-button').addEventListener('click', function(e) {
-                    if (searchInput.value.trim() === '') {
-                        e.preventDefault();
-                        searchInput.focus();
-                    }
-                });
-                
-                if (searchInput.value.trim() !== '') {
-                    searchInput.classList.add('expanded');
+            snowflake.style.left = `${Math.random() * 100}%`;
+            snowflake.style.animationDuration = `${Math.random() * 2 + 1}s`;
+            snowflake.style.animationDelay = `${Math.random() * 2}s`;
+            snowflake.style.opacity = Math.random() * 0.7 + 0.3;
+            snowflake.style.fontSize = `${Math.random() * 8 + 6}px`;
+            
+            snowflakesContainer.appendChild(snowflake);
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        createSnowflakes();
+        window.addEventListener('resize', createSnowflakes);
+        
+        var searchInput = document.getElementById('search-input');
+        if (searchInput) {
+            document.querySelector('.search-button').addEventListener('click', function(e) {
+                if (searchInput.value.trim() === '') {
+                    e.preventDefault();
+                    searchInput.focus();
                 }
-                
-                document.addEventListener('click', function(e) {
-                    if (!searchInput.contains(e.target) && 
-                        !document.querySelector('.search-button').contains(e.target) && 
-                        searchInput.value.trim() === '') {
-                        searchInput.blur();
-                    }
-                });
+            });
+            
+            if (searchInput.value.trim() !== '') {
+                searchInput.classList.add('expanded');
             }
-        });
-    </script>
+            
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && 
+                    !document.querySelector('.search-button').contains(e.target) && 
+                    searchInput.value.trim() === '') {
+                    searchInput.blur();
+                }
+            });
+        }
+    });
+</script>
 </body>
 </html>

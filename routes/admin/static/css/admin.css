@@ -20,6 +20,12 @@
     padding: 0;
 }
 
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Segoe UI', Arial, sans-serif;
     background: var(--gray);
@@ -28,7 +34,11 @@ body {
     color: #333;
     line-height: 1.6;
     overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
 }
+
 /* 雪花动画样式修改，仅在header中显示 */
 @keyframes snowfall {
     0% {
@@ -101,6 +111,7 @@ header {
     padding: 24px 0 16px 0;
     box-shadow: var(--shadow);
     position: relative;
+    z-index: 30;
 }
 
 .header-title {
@@ -110,21 +121,30 @@ header {
     font-weight: bold;
 }
 
+/* 修改容器布局，确保侧栏能延伸到底部 */
 .container {
     display: flex;
-    min-height: 80vh;
+    flex: 1;
     position: relative;
     z-index: 10;
+    overflow: visible;
 }
 
+/* 修改侧栏样式，确保延伸到底部 */
 .sidebar {
     width: 250px;
     background: var(--white);
     box-shadow: var(--shadow);
-    min-height: 100%;
     transition: width 0.3s;
     z-index: 20;
     border-radius: 0 var(--radius) var(--radius) 0;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar nav {
+    flex: 1;
 }
 
 .sidebar nav ul {
@@ -158,10 +178,16 @@ header {
     color: var(--primary-dark);
 }
 
+/* 修改主内容区域，包含页脚在内 */
 .main-content {
     flex: 1;
-    padding: 30px 40px;
+    padding: 30px 40px 0;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow-y: visible;
+    max-height: none;
+    position: relative;
 }
 
 h2 {
@@ -454,28 +480,6 @@ button i {
     transform: translateY(-2px);
 }
 
-footer {
-    background: var(--secondary);
-    color: #777;
-    text-align: center;
-    padding: 18px 0;
-    margin-top: 40px;
-    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
-    font-size: 1rem;
-    position: relative;
-    z-index: 10;
-}
-
-.footer-content {
-    font-size: 0.98rem;
-}
-
-.footer-content i {
-    color: #ff5252;
-}
-
-
-
 /* 响应式设计改进 */
 @media (max-width: 1280px) {
     .stats-container {
@@ -508,6 +512,10 @@ footer {
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); 
         border-radius: 0;
         overflow-x: auto;
+    }
+    
+    .main-content {
+        padding: 20px 15px 0;
     }
     
     .sidebar nav ul {
@@ -722,3 +730,64 @@ footer {
         width: calc(100% - 40px);
     }
 }
+
+.system-info-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.system-info-card {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    flex: 1;
+    min-width: 200px;
+    position: relative;
+    border-left: 4px solid #4a76a8;
+}
+
+.system-info-title {
+    font-size: 0.9rem;
+    color: #777;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.system-info-title i {
+    margin-right: 6px;
+    color: #4a76a8;
+}
+
+.system-info-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.system-info-detail {
+    font-size: 0.8rem;
+    color: #999;
+    margin-top: 5px;
+}
+
+/* 内存使用条样式 */
+.memory-bar-container {
+    height: 12px;
+    background-color: #e0e0e0;
+    border-radius: 6px;
+    margin-top: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.memory-bar {
+    height: 100%;
+    background-color: #ff9933;
+    border-radius: 6px;
+    transition: width 0.3s ease;
+}
+

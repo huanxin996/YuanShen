@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="/admin/static/css/admin.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
-<body>
+<body id="top">
     <header>
         <div class="snowflakes" aria-hidden="true" id="snowflakes"></div>
         <div class="header-title">API 管理系统</div>
@@ -18,8 +18,8 @@
         <aside class="sidebar">
             <nav>
                 <ul>
-                    <li><a href="/admin/manage" {% if current_page == 'routes' %}class="active"{% endif %}><i class="fas fa-list"></i> <span>路由管理</span></a></li>
                     <li><a href="/admin/stats" {% if current_page == 'stats' %}class="active"{% endif %}><i class="fas fa-chart-bar"></i> <span>数据统计</span></a></li>
+                    <li><a href="/admin/manage" {% if current_page == 'routes' %}class="active"{% endif %}><i class="fas fa-list"></i> <span>路由管理</span></a></li>
                     <li><a href="#" {% if current_page == 'settings' %}class="active"{% endif %}><i class="fas fa-cog"></i> <span>系统设置</span></a></li>
                 </ul>
             </nav>

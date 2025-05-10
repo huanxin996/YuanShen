@@ -1,50 +1,6 @@
 {% include 'admin_header.html' %}
 
-<style>
-    /* 系统信息卡片样式 */
-    .system-info-container {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 15px;
-        margin: 20px 0;
-    }
-    
-    .system-info-card {
-        background-color: #fff;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        padding: 16px;
-        flex: 1;
-        min-width: 200px;
-        position: relative;
-        border-left: 4px solid #4a76a8;
-    }
-    
-    .system-info-title {
-        font-size: 0.9rem;
-        color: #777;
-        margin-bottom: 8px;
-        display: flex;
-        align-items: center;
-    }
-    
-    .system-info-title i {
-        margin-right: 6px;
-        color: #4a76a8;
-    }
-    
-    .system-info-value {
-        font-size: 1.1rem;
-        font-weight: 600;
-        color: #333;
-    }
-    
-    .system-info-detail {
-        font-size: 0.8rem;
-        color: #999;
-        margin-top: 5px;
-    }
-</style>
+<link rel="stylesheet" href="/admin/static/css/admin_stats.css">
 
 <div class="dashboard">
     <div class="stats-container">
@@ -65,7 +21,7 @@
         <div class="stat-card">
             <div class="stat-icon"><i class="fas fa-clock"></i></div>
             <div class="stat-content">
-                <div class="stat-value">{{ uptime }}</div>
+                <div class="stat-value" id="uptime-display">{{ uptime }}</div>
                 <div class="stat-label">运行时间</div>
             </div>
         </div>
@@ -77,9 +33,30 @@
             </div>
         </div>
     </div>
+    
+    <!-- 热门API排行 -->
+    <div class="top-apis-section">
+        <h3><i class="fas fa-trophy"></i> 热门API排行</h3>
+        <div class="top-apis-list">
+            {% for api, count in top_apis %}
+            <div class="top-api-item">
+                <div class="top-api-rank">{{ loop.index }}</div>
+                <div class="top-api-info">
+                    <div class="top-api-path">{{ api }}</div>
+                    <div class="top-api-count">{{ count }} 次调用</div>
+                    <div class="top-api-bar">
+                        <div class="top-api-bar-fill" style="width: {{ (count / top_apis[0][1] * 100) if top_apis[0][1] > 0 else 0 }}%"></div>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <div class="no-data">暂无访问数据</div>
+            {% endfor %}
+        </div>
+    </div>
 </div>
 
-<!-- 新增系统信息部分 -->
+<!-- 系统信息部分 -->
 <div class="content-section">
     <h2><i class="fas fa-microchip"></i> 系统信息</h2>
     <div class="system-info-container">
@@ -95,19 +72,41 @@
             <div class="system-info-title"><i class="fas fa-code-branch"></i> FastAPI版本</div>
             <div class="system-info-value">{{ system_info.fastapi_version }}</div>
         </div>
-        <div class="system-info-card">
-            <div class="system-info-title"><i class="fas fa-memory"></i> 内存使用</div>
-            <div class="system-info-value">{{ system_info.mem_percent }}</div>
-            <div class="system-info-detail">{{ system_info.mem_used }} / {{ system_info.mem_total }}</div>
-        </div>
-        <div class="system-info-card">
-            <div class="system-info-title"><i class="fas fa-microchip"></i> CPU使用率</div>
-            <div class="system-info-value">{{ system_info.cpu_percent }}</div>
-            <div class="system-info-detail">{{ system_info.cpu_count }}个逻辑处理器</div>
+        
+        <!-- 内存卡片 - 放在其他系统信息卡片后面 -->
+        <div class="system-info-card memory-card">
+            <div class="resource-card">
+                <div class="system-info-title"><i class="fas fa-memory"></i> 内存使用</div>
+                <div class="system-info-value">{{ system_info.mem_total }}</div>
+                <div class="system-info-detail">
+                    系统已用: {{ system_info.mem_used }} ({{ system_info.system_mem_percent }}%)
+                </div>
+                <div class="system-info-detail">
+                    API服务占用: {{ system_info.process_mem }} ({{ system_info.process_percent }})
+                </div>
+                
+                <!-- 内存使用条 -->
+                <div class="memory-bar-container">
+                    <div class="system-memory-bar" style="width: {{ system_info.system_mem_percent }}%"></div>
+                    <div class="api-memory-bar" style="width: {{ system_info.process_percent_raw }}%"></div>
+                </div>
+                
+                <div class="resource-legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-system"></div>
+                        <div class="legend-text">系统占用</div>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-api"></div>
+                        <div class="legend-text">API服务占用</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+<!-- 图表部分 -->
 <div class="content-section">
     <h2><i class="fas fa-chart-pie"></i> API调用统计</h2>
     <div class="chart-container">
@@ -122,7 +121,7 @@
     </div>
 </div>
 
-<!-- 其余部分保持不变 -->
+<!-- API详细统计 -->
 <div class="content-section">
     <h2><i class="fas fa-list-ol"></i> API详细统计</h2>
     <div class="table-container">
@@ -159,7 +158,10 @@
     </div>
 </div>
 
-<!-- 保留原有图表和脚本部分 -->
+<!-- 附加隐藏的服务器启动时间数据供JS使用 -->
+<input type="hidden" id="server-start-time" value="{{ system_info.server_start_timestamp|default(0) }}">
+
+<!-- 图表数据和脚本 -->
 <script type="application/json" id="chart-data">
 {
     "apiNames": {% if api_names %}{{ api_names|tojson }}{% else %}[]{% endif %},
@@ -171,129 +173,6 @@
 
 <!-- 引入echarts图表库 -->
 <script src="/admin/static/js/echarts.min.js"></script>
-<script>
-// 获取数据，用更安全的方式
-document.addEventListener('DOMContentLoaded', function() {
-    // 从JSON数据块中获取数据，避免直接在JS中嵌入模板变量
-    var chartDataElement = document.getElementById('chart-data');
-    var chartData;
-    
-    try {
-        chartData = JSON.parse(chartDataElement.textContent);
-    } catch (error) {
-        console.error('解析图表数据失败:', error);
-        chartData = {
-            apiNames: [],
-            pieData: [],
-            timeLabels: [],
-            trendData: []
-        };
-    }
-    
-    // 提取数据
-    var apiNames = chartData.apiNames || [];
-    var pieData = chartData.pieData || [];
-    var timeLabels = chartData.timeLabels || [];
-    var trendData = chartData.trendData || [];
-    
-    // 初始化饼图
-    var pieChartElement = document.getElementById('api-pie-chart');
-    if (pieChartElement) {
-        var pieChart = echarts.init(pieChartElement);
-        var pieOption = {
-            tooltip: {
-                trigger: 'item',
-                formatter: '{b}: {c} ({d}%)'
-            },
-            legend: {
-                orient: 'vertical',
-                right: 10,
-                top: 'center',
-                data: apiNames
-            },
-            series: [
-                {
-                    name: 'API调用',
-                    type: 'pie',
-                    radius: ['40%', '70%'],
-                    avoidLabelOverlap: false,
-                    itemStyle: {
-                        borderRadius: 10,
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    },
-                    label: {
-                        show: false,
-                        position: 'center'
-                    },
-                    emphasis: {
-                        label: {
-                            show: true,
-                            fontSize: '18',
-                            fontWeight: 'bold'
-                        }
-                    },
-                    labelLine: {
-                        show: false
-                    },
-                    data: pieData
-                }
-            ]
-        };
-        pieChart.setOption(pieOption);
-    }
-    
-    // 初始化趋势图
-    var trendChartElement = document.getElementById('api-trend-chart');
-    if (trendChartElement) {
-        var trendChart = echarts.init(trendChartElement);
-        var trendOption = {
-            tooltip: {
-                trigger: 'axis'
-            },
-            legend: {
-                data: ['总调用量'],
-                top: 'top'
-            },
-            grid: {
-                left: '3%',
-                right: '4%',
-                bottom: '3%',
-                containLabel: true
-            },
-            xAxis: {
-                type: 'category',
-                boundaryGap: false,
-                data: timeLabels
-            },
-            yAxis: {
-                type: 'value'
-            },
-            series: [
-                {
-                    name: '总调用量',
-                    type: 'line',
-                    stack: 'Total',
-                    data: trendData,
-                    areaStyle: {},
-                    emphasis: {
-                        focus: 'series'
-                    }
-                }
-            ]
-        };
-        trendChart.setOption(trendOption);
-    }
-    
-    // 响应式调整
-    function resizeCharts() {
-        if (typeof pieChart !== 'undefined' && pieChart) pieChart.resize();
-        if (typeof trendChart !== 'undefined' && trendChart) trendChart.resize();
-    }
-    
-    // 窗口大小变化时调整图表
-    window.addEventListener('resize', resizeCharts);
-});
-</script>
+<script src="/admin/static/js/admin_stats.js"></script>
 
 {% include 'admin_footer.html' %}

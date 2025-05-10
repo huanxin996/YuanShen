@@ -321,9 +321,8 @@ class GlobalVars:
         """主动初始化全局变量管理器"""
         instance = cls()
         instance.ensure_loaded()
-        # 设置应用启动时间，如果不存在
-        if not cls.get("server_start_time"):
-            cls.set("server_start_time", time.time())
+        # 设置应用启动时间
+        cls.set("server_start_time", time.time())
         # 清理可能存在的过期数据
         cls.clear_expired()
         

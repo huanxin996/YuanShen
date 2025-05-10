@@ -1,44 +1,5 @@
 {% include 'admin_header.html' %}
 
-<div class="dashboard">
-    <div class="stats-container">
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-server"></i></div>
-            <div class="stat-content">
-                <div class="stat-value">{{ api_count }}</div>
-                <div class="stat-label">API总数</div>
-            </div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
-            <div class="stat-content">
-                <div class="stat-value">{{ total_calls }}</div>
-                <div class="stat-label">总访问量</div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="top-apis-section">
-        <h3><i class="fas fa-trophy"></i> 热门API排行</h3>
-        <div class="top-apis-list">
-            {% for api, count in top_apis %}
-            <div class="top-api-item">
-                <div class="top-api-rank">{{ loop.index }}</div>
-                <div class="top-api-info">
-                    <div class="top-api-path">{{ api }}</div>
-                    <div class="top-api-count">{{ count }} 次调用</div>
-                    <div class="top-api-bar">
-                        <div class="top-api-bar-fill" style="width: '{{ (count / top_apis[0][1] * 100) if top_apis[0][1] > 0 else 0 }}%'"></div>
-                    </div>
-                </div>
-            </div>
-            {% else %}
-            <div class="no-data">暂无访问数据</div>
-            {% endfor %}
-        </div>
-    </div>
-</div>
-
 <div class="content-section">
     <div class="section-header">
         <h2><i class="fas fa-cog"></i> 路由状态管理</h2>

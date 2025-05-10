@@ -12,8 +12,10 @@ admin_router = APIRouter(prefix="/admin", tags=["admin"])
 def get_system_info():
     """获取系统相关信息"""
     try:
+        # 获取系统类型
         os_info = f"{platform.system()} {platform.release()}"
         
+        # 检查是否在容器环境中运行
         is_docker = os.path.exists("/.dockerenv")
         is_kubernetes = os.path.exists("/var/run/secrets/kubernetes.io")
         
@@ -26,28 +28,61 @@ def get_system_info():
         else:
             container_env = "否"
         
+        # 获取FastAPI版本
         try:
             fastapi_version = importlib.metadata.version("fastapi")
         except:
             fastapi_version = "未知"
         
+        # 获取系统内存使用情况
         mem = psutil.virtual_memory()
-        mem_used = f"{mem.used / (1024 * 1024 * 1024):.2f} GB"
-        mem_total = f"{mem.total / (1024 * 1024 * 1024):.2f} GB"
-        mem_percent = f"{mem.percent}%"
+        mem_total = mem.total / (1024 * 1024 * 1024)  # GB
+        mem_used = mem.used / (1024 * 1024 * 1024)  # GB
+        mem_available = mem.available / (1024 * 1024 * 1024)  # GB
         
-        cpu_percent = f"{psutil.cpu_percent(interval=0.1)}%"
+        mem_total_str = f"{mem_total:.2f} GB"
+        mem_used_str = f"{mem_used:.2f} GB"
+        mem_available_str = f"{mem_available:.2f} GB"
+        
+        system_mem_percent = mem.percent
+        
+        # 获取当前进程内存使用情况
+        process = psutil.Process(os.getpid())
+        process_mem = process.memory_info().rss / (1024 * 1024 * 1024)  # GB
+        process_mem_str = f"{process_mem:.2f} GB"
+        
+        # 计算当前进程占系统内存的百分比
+        process_percent = (process_mem / mem_total) * 100
+        process_percent_str = f"{process_percent:.1f}%"
+        
+        # 获取系统CPU使用率
+        system_cpu_percent = psutil.cpu_percent(interval=0.1)
         cpu_count = psutil.cpu_count(logical=True)
+        
+        # 获取当前进程CPU使用率
+        process_cpu_percent = process.cpu_percent(interval=0.1) / cpu_count
+        
+        # 获取服务器启动时间
+        start_time = GlobalVars.get("server_start_time", time.time())
+        server_start_timestamp = int(start_time)
         
         return {
             "os_info": os_info,
             "container_env": container_env,
             "fastapi_version": fastapi_version,
-            "mem_used": mem_used,
-            "mem_total": mem_total,
-            "mem_percent": mem_percent,
-            "cpu_percent": cpu_percent,
-            "cpu_count": cpu_count
+            "mem_total": mem_total_str,
+            "mem_used": mem_used_str, 
+            "mem_available": mem_available_str,
+            "system_mem_percent": system_mem_percent,
+            "process_mem": process_mem_str,
+            "process_percent": process_percent_str,
+            "process_percent_raw": process_percent,
+            "system_cpu_percent": system_cpu_percent,
+            "system_cpu_percent_str": f"{system_cpu_percent}%",
+            "cpu_count": cpu_count,
+            "process_cpu_percent": process_cpu_percent,
+            "process_cpu_percent_str": f"{process_cpu_percent:.1f}%",
+            "server_start_timestamp": server_start_timestamp
         }
     except Exception as e:
         log.error(f"获取系统信息失败: {str(e)}")
@@ -55,11 +90,19 @@ def get_system_info():
             "os_info": "获取失败",
             "container_env": "获取失败",
             "fastapi_version": "获取失败",
-            "mem_used": "获取失败",
-            "mem_total": "获取失败",
-            "mem_percent": "0%",
-            "cpu_percent": "0%",
-            "cpu_count": 0
+            "mem_total": "未知",
+            "mem_used": "未知",
+            "mem_available": "未知",
+            "system_mem_percent": 0,
+            "process_mem": "未知",
+            "process_percent": "0%",
+            "process_percent_raw": 0,
+            "system_cpu_percent": 0,
+            "system_cpu_percent_str": "0%",
+            "cpu_count": 0,
+            "process_cpu_percent": 0,
+            "process_cpu_percent_str": "0%",
+            "server_start_timestamp": 0
         }
 
 def register_routes(app: FastAPI):
@@ -72,6 +115,7 @@ templates = Jinja2Templates(directory="routes/admin/templates")
 
 @admin_router.get("/manage")
 async def admin_manage(request: Request):
+    """路由管理页面，专注于路由列表和状态管理"""
     app = request.app
     mw = route_manager.get_protection_middleware(app)
     
@@ -90,7 +134,6 @@ async def admin_manage(request: Request):
     route_list = []
     
     api_stats = {}
-    total_calls = 0
     
     if GlobalVars.table_exists("api_stats"):
         all_vars = GlobalVars.get_all_from_table("api_stats")
@@ -98,14 +141,8 @@ async def admin_manage(request: Request):
             if key.startswith("api_count:"):
                 api_path = key.replace("api_count:", "")
                 api_stats[api_path] = value
-                total_calls += value
-        log.debug(f"从api_stats表加载了{len(api_stats)}条API统计数据")
     else:
         log.warning("api_stats表不存在，无法加载API统计数据")
-    
-    top_apis = sorted(api_stats.items(), key=lambda x: x[1], reverse=True)[:3]
-    
-    api_count = len([r for r in routes if not r.startswith("/admin") and not r.startswith("/static") and not r.startswith("/favicon.ico")])
     
     for path in sorted(routes):
         if path.startswith("/admin") or path.startswith("/static") or path.startswith("/favicon.ico"):
@@ -124,16 +161,13 @@ async def admin_manage(request: Request):
     return templates.TemplateResponse("admin_index.html", {
         "request": request, 
         "route_list": route_list,
-        "api_count": api_count,
-        "total_calls": total_calls,
-        "top_apis": top_apis,
         "current_page": "routes",
         "search_query": search_query
     })
 
 @admin_router.get("/stats")
 async def admin_stats(request: Request):
-    """API统计数据页面路由"""
+    """API统计数据页面路由，包含所有统计信息和系统监控"""
     app = request.app
     mw = route_manager.get_protection_middleware(app)
     if not mw:
@@ -160,10 +194,13 @@ async def admin_stats(request: Request):
                 if not api_path.startswith("/admin") and not api_path.startswith("/static") and not api_path.startswith("/favicon.ico"):
                     api_stats[api_path] = value
                     total_calls += value
-        log.debug(f"从api_stats表加载了{len(api_stats)}条API统计数据")
     else:
         log.warning("api_stats表不存在，无法加载API统计数据")
     
+    # 为热门API排行准备数据
+    top_apis = sorted(api_stats.items(), key=lambda x: x[1], reverse=True)[:3]
+    
+    # 为完整API统计表格准备数据
     sorted_api_stats = []
     for rank, (path, count) in enumerate(sorted(api_stats.items(), key=lambda x: x[1], reverse=True)):
         sorted_api_stats.append({
@@ -175,6 +212,7 @@ async def admin_stats(request: Request):
             "status_class": "disabled" if path in disabled_routes else "enabled"
         })
     
+    # 为饼图准备数据
     api_names = []
     pie_data = []
     other_count = 0
@@ -192,6 +230,7 @@ async def admin_stats(request: Request):
         api_names.append("其他")
         pie_data.append({"name": "其他", "value": other_count})
     
+    # 为趋势图准备数据
     time_labels = []
     trend_data = []
     today = datetime.datetime.now()
@@ -208,21 +247,7 @@ async def admin_stats(request: Request):
         daily_count = total_daily_stats.get(day_str, 0)
         trend_data.append(daily_count)
     
-    # 获取服务器启动时间
-    start_time = GlobalVars.get("server_start_time", time.time())
-    
-    uptime_seconds = int(time.time() - start_time)
-    days, remainder = divmod(uptime_seconds, 86400)
-    hours, remainder = divmod(remainder, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    
-    if days > 0:
-        uptime = f"{days}天{hours}小时"
-    elif hours > 0:
-        uptime = f"{hours}小时{minutes}分"
-    else:
-        uptime = f"{minutes}分{seconds}秒"
-    
+    # 获取系统信息
     system_info = get_system_info()
     
     return templates.TemplateResponse("admin_stats.html", {
@@ -236,7 +261,7 @@ async def admin_stats(request: Request):
         "pie_data": pie_data,
         "time_labels": time_labels,
         "trend_data": trend_data,
-        "uptime": uptime,
+        "top_apis": top_apis,
         "current_page": "stats",
         "system_info": system_info
     })
