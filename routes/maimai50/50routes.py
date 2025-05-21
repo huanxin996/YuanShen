@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable,Awaitable
 from loguru import logger as log
 from fastapi import FastAPI, APIRouter
 from fastapi.responses import JSONResponse
@@ -73,16 +73,16 @@ async def process_image_request(
         log.exception(f"{endpoint_name} 请求处理错误: {e}")
         return JSONResponse(status_code=500, content={"returnCode": 101, "msg": str(e)})
 
-async def safe_image_call(awaitable, endpoint_name: str):
+async def safe_image_call(awaitable: Awaitable, endpoint_name: str):
     try:
         pic = await awaitable
-        return await process_image_result(pic, endpoint_name)
     except (UserNotFoundError, UserDisabledQueryError) as e:
         log.error(f"{endpoint_name}: {e}")
         return JSONResponse(status_code=400, content={"returnCode": 100, "msg": str(e)})
     except Exception as e:
         log.exception(f"{endpoint_name} 发生未知错误: {e}")
         return JSONResponse(status_code=500, content={"returnCode": 101, "msg": str(e)})
+    return await process_image_result(pic, endpoint_name)
 
 
 @router.post("/b50")

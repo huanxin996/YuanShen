@@ -2,3 +2,14 @@
 2025-05-21 13:53:09,949 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
 2025-05-21 13:53:09,953 | INFO     | uvicorn.error:startup:62 - Application startup complete.
 2025-05-21 13:53:10,459 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-21 13:57:29,551 | INFO     | uvicorn.error:_serve:83 - Started server process [24468]
+2025-05-21 13:57:29,552 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-21 13:57:29,554 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-21 13:57:29,555 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-21 13:57:46,129 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-21 13:57:46,238 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-21 13:57:46,238 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-21 13:57:46,239 | INFO     | uvicorn.error:_serve:93 - Finished server process [24468]
+2025-05-21 13:57:46,239 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-21 13:57:46,353 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-21 13:57:46,353 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
