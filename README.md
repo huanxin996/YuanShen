@@ -34,10 +34,12 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 
 - 提供舞萌DX玩家成绩相关的多种 B50 生成接口
 - 支持标准、Bypass、理论值、累计分数、高分、AP、FC 等多种视图
-- 支持曲目信息查询、图片生成等功能
-- 典型接口如 `/maimai/b50`、`/maimai/minfo` 等
+- 支持曲目信息查询、图片生成、定数表查询等功能
+- 包含超过15个图片生成API.
 - 基于 [nonebot-plugin-maimaidx](https://github.com/Yuri-YuzuChaN/nonebot-plugin-maimaidx) 项目改造开发
 - 静态资源文件请从原项目中获取，并放在main.py同级目录下
+
+👉 [查看完整maimai API文档](./docs/MAIMAI_API_README.md)
 
 ### 2. `admin` 管理模块
 
@@ -46,6 +48,8 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 - 可视化展示 API 总数、总访问量、访问量前三的 API
 - 支持一键操作 API 状态，安全高效
 - 系统资源监控，包括CPU使用率、内存占用、运行环境等
+
+👉 [查看完整admin模块文档](./docs/ADMIN_API_README.md)
 
 ---
 
@@ -90,58 +94,32 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 
 ## 🚀 API 快速参考
 
-### maimai 成绩生成类 API
+### 模块概览
 
-| 端点                      | 方法 | 描述                       |
-|---------------------------|------|----------------------------|
-| `/maimai/b50`             | POST | 生成标准B50图片            |
-| `/maimai/bypass50`        | POST | 生成Bypass B50图片         |
-| `/maimai/theoretical50`   | POST | 生成理论值B50图片          |
-| `/maimai/cum50`           | POST | 生成积分B50图片            |
-| `/maimai/abstract50`      | POST | 生成简洁版B50图片          |
-| `/maimai/high50`          | POST | 生成高分B50图片            |
-| `/maimai/ap50`            | POST | 生成AP成绩B50图片          |
-| `/maimai/fc50`            | POST | 生成FC成绩B50图片          |
-| `/maimai/minfo`           | POST | 获取maimai歌曲基本信息图片 |
+| 模块      | 主要功能                     | 典型接口                  | 详细文档 |
+|-----------|------------------------------|---------------------------|---------|
+| `maimai`  | 舞萌DX成绩图片生成           | `/maimai/b50`, `/maimai/minfo` | [查看文档](./docs/MAIMAI_API_README.md) |
+| `admin`   | 系统管理与监控               | `/admin/manage`, `/admin/stats` | [查看文档](./docs/ADMIN_API_README.md) |
 
-**请求参数示例：**
+### 主要返回格式
+
+**成功响应：**
 
 ```json
 {
-  "qq": "12345678",      // QQ号（可选）
-  "name": "玩家昵称"      // 玩家昵称（可选，qq和name至少填一个）
-}
-```
-
-- `/maimai/minfo` 需额外提供 `songid` 字段。
-
-**响应格式：**
-
-```json
-{
-  "returnCode": 1,      // 1表示成功，100/101等为错误码
+  "returnCode": 1,      // 1表示成功
   "base64": "..."       // 图片base64字符串（如有）
 }
 ```
 
----
+**错误响应：**
 
-### admin 管理模块 API
-
-| 端点            | 方法 | 描述                       |
-|-----------------|------|----------------------------|
-| `/admin/manage` | GET  | 访问管理界面               |
-| `/admin/action` | POST | 启用/禁用指定API           |
-| `/admin/stats`  | GET  | 查看API统计和系统信息      |
-
-**管理后台功能：**
-
-- 查看 API 总数和总调用次数
-- 热门 API 排行（调用频率最高的3个API）
-- API 调用趋势图（最近7天）
-- 启用/禁用特定 API 端点
-- 系统资源监控（CPU、内存使用率）
-- 运行环境信息（系统类型、容器状态、FastAPI版本）
+```json
+{
+  "returnCode": 100,    // 100表示参数错误，101表示内部错误
+  "msg": "错误信息"      // 具体错误描述
+}
+```
 
 ---
 

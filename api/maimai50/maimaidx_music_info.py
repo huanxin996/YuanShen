@@ -304,15 +304,13 @@ async def draw_rating_table(qqid: int, rating: str, isfc: bool = False) -> Union
                 if r != -1:
                     pic = fcl[combo_rank[r]] if isfc else score_Rank_l[score_Rank[-6:][r]]
                     im.alpha_composite(Image.open(maimaidir / f'UI_MSS_Allclear_Icon_{pic}.png'), (1270, 120))
-        msg = im
+        return im
     except UserNotFoundError as e:
-        msg = str(e)
+        raise UserNotFoundError(f'找不到用户: {e}')
     except UserDisabledQueryError as e:
-        msg = str(e)
+        raise UserDisabledQueryError(f'用户查询被禁用: {e}')
     except Exception as e:
-        log.error(traceback.format_exc())
-        msg = f'Milk遇到了无法处理的错误... {type(e)}\n可以告诉一下@澪度 让他看看的说'
-    return msg
+        raise Exception(f'遇到了无法处理的错误... {type(e)}')
 
 
 async def draw_plate_table(qqid: int, version: str, plan: str) -> Union[str, Image.Image]:
@@ -453,12 +451,11 @@ async def draw_plate_table(qqid: int, version: str, plan: str) -> Union[str, Ima
             else:
                 tr.draw(420 + 220 * num, 225, 50, _v, (5, 51, 101, 255), 'mm')
         hy.draw(750, im.size[1] - 118, 28, f'Powered BY @澪度 - MilkBOT', (5, 51, 101, 255), 'mm')
-        msg = im
+        return im
     except UserNotFoundError as e:
-        msg = str(e)
+        raise UserNotFoundError(f'找不到用户: {e}')
     except UserDisabledQueryError as e:
-        msg = str(e)
+        raise UserDisabledQueryError(f'用户查询被禁用: {e}')
     except Exception as e:
-        log.error(traceback.format_exc())
-        msg = f'Milk遇到了无法处理的错误... {type(e)}\n可以告诉一下@澪度 让他看看的说'
-    return msg
+        error = traceback.format_exc()
+        raise Exception(f'遇到了无法处理的错误... {type(e)}\n{error}')

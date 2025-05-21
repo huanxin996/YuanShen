@@ -3,14 +3,13 @@ import traceback
 from .config import maimaitoken
 import pyecharts.options as opts
 from loguru import logger as log
-from nonebot.adapters.onebot.v11 import MessageSegment
 from PIL import Image
 from pyecharts.charts import Pie
 from pyecharts.render import make_snapshot
 from snapshot_phantomjs import snapshot
 
 from .config import *
-from .image import image_to_base64, text_to_image
+from .image import text_to_image
 from .maimaidx_api_data import *
 from .maimaidx_best_50 import Draw, computeRa, generateAchievementList
 from .maimaidx_model import Music, PlanInfo, PlayInfoDefault, PlayInfoDev, RaMusic
@@ -21,7 +20,7 @@ for acc in [i / 10 for i in range(10, 151)]:
     realAchievementList[f'{acc:.1f}'] = generateAchievementList(acc)
 
 
-async def music_global_data(music: Music, level_index: int) -> MessageSegment:
+async def music_global_data(music: Music, level_index: int) -> Image.Image:
     stats = music.stats[level_index]
     fc_data_pair = [list(z) for z in zip([c.upper() if c else 'Not FC' for c in [''] + comboRank], stats.fc_dist)]
     acc_data_pair = [list(z) for z in zip([s.upper() for s in scoreRank], stats.dist)]
@@ -75,7 +74,7 @@ async def music_global_data(music: Music, level_index: int) -> MessageSegment:
     make_snapshot(snapshot, str(static / 'temp_pie.html'), str(static / 'temp_pie.png'))
 
     im = Image.open(static / 'temp_pie.png')
-    return MessageSegment.image(image_to_base64(im))
+    return im
 
 
 async def rise_score_data(qqid: int, username: Optional[str], rating: str, score: str, nickname: Optional[str] = None) -> str:
@@ -150,16 +149,13 @@ async def rise_score_data(qqid: int, username: Optional[str], rating: str, score
             for music, diff, ds, achievement, rank, ra in sorted(music_dx_list, key=lambda i: int(i[0].id)):
                 result += f'{music.id}. {music.title} {diff} {ds} {achievement} {rank} {ra}\n'
                 
-        msg = MessageSegment.image(image_to_base64(text_to_image(result.strip())))
+        return text_to_image(result.strip())
     except UserNotFoundError as e:
-        msg = str(e)
+        raise UserNotFoundError(f'找不到用户: {e}')
     except UserDisabledQueryError as e:
-        msg = str(e)
+        raise UserDisabledQueryError(f'用户查询被禁用: {e}')
     except Exception as e:
-        log.error(traceback.format_exc())
-        msg = f'未知错误：{type(e)}\n请联系Bot管理员'
-        
-    return msg
+        raise Exception(f'遇到了无法处理的错误... {type(e)}')
 
 
 async def player_plate_data(qqid: int, username: Optional[str], ver: str, plan: str, nickname: Optional[str]) -> str:
@@ -305,7 +301,7 @@ Master剩余{len(song_remain_master)}首
                                 self_record = syncRank[sync_rank.index(verlist[record_index]['fs'])].upper()
                     msg += f'No.{i + 1} {s[0]}. {s[1]} {s[2]} {s[3]} {self_record}'.strip() + '\n'
                 if len(song_remain_difficult) > 10:
-                    msg = MessageSegment.image(image_to_base64(text_to_image(msg.strip())))
+                    return text_to_image(msg.strip())
             else:
                 msg += f'还有{len(song_remain_difficult)}首大于13.6定数的曲目，加油推分捏！\n'
         elif len(song_remain) > 0:
@@ -330,7 +326,7 @@ Master剩余{len(song_remain_master)}首
                                 self_record = syncRank[sync_rank.index(verlist[record_index]['fs'])].upper()
                     msg += f'No.{i + 1} {m.id}. {m.title} {diffs[s[1]]} {m.ds[s[1]]} {self_record}'.strip() + '\n'
                 if len(song_remain) > 10:
-                    msg = MessageSegment.image(image_to_base64(text_to_image(msg.strip())))
+                    msg = text_to_image(msg.strip())
             else:
                 msg += '已经没有定数大于13.6的曲目了,加油清谱捏！\n'
         else:
@@ -549,15 +545,13 @@ async def level_process_data(
             dp = DrawPlan(image)
             im = await dp.draw_category(category, notstarted)
 
-        msg = MessageSegment.image(image_to_base64(im.resize((1400, int(im.size[1] * round(1400 / 2200, 2))))))
+        return im.resize((1400, int(im.size[1] * round(1400 / 2200, 2))))
     except UserNotFoundError as e:
-        msg = str(e)
+        raise UserNotFoundError(f'找不到用户: {e}')
     except UserDisabledQueryError as e:
-        msg = str(e)
+        raise UserDisabledQueryError(f'用户查询被禁用: {e}')
     except Exception as e:
-        log.error(traceback.format_exc())
-        msg = f'未知错误：{type(e)}\n请联系Bot管理员'
-    return msg
+        raise Exception(f'遇到了无法处理的错误... {type(e)}')
 
 
 class DrawScoreList(Draw):
@@ -649,18 +643,16 @@ async def level_achievement_list_data(
 
         sc = DrawScoreList(image)
         im = await sc.draw_scorelist(newdata, page, end_page_num)
-        msg = MessageSegment.image(image_to_base64(im.resize((1400, int(im.size[1] * round(1400 / 2200, 2))))))
+        return im.resize((1400, int(im.size[1] * round(1400 / 2200, 2))))
     except UserNotFoundError as e:
-        msg = str(e)
+        raise UserNotFoundError(f'找不到用户: {e}')
     except UserDisabledQueryError as e:
-        msg = str(e)
+        raise UserDisabledQueryError(f'用户查询被禁用: {e}')
     except Exception as e:
-        log.error(traceback.format_exc())
-        msg = f'未知错误：{type(e)}\n请联系Bot管理员'
-    return msg
+        raise Exception(f'遇到了无法处理的错误... {type(e)}')
 
 
-async def rating_ranking_data(name: Optional[str], page: Optional[int]) -> str:
+async def rating_ranking_data(name: Optional[str], page: Optional[int]) -> Union[str, Image.Image]:
     """
     查看查分器排行榜
     
@@ -687,8 +679,7 @@ async def rating_ranking_data(name: Optional[str], page: Optional[int]) -> str:
             for i, ranker in enumerate(sorted_rank_data[(page - 1) * 50:end]):
                 msg += f'{i + 1 + (page - 1) * 50}. {ranker["username"]} {ranker["ra"]}\n'
             msg += f'第{page}页，共{user_num // 50 + 1}页'
-            data = MessageSegment.image(image_to_base64(text_to_image(msg.strip())))
+            return text_to_image(msg.strip())
     except Exception as e:
-        log.error(traceback.format_exc())
-        data = f'未知错误：{type(e)}\n请联系Bot管理员'
-    return data
+        error = traceback.format_exc()
+        raise Exception(f'遇到了无法处理的错误... {type(e)}\n{error}')
