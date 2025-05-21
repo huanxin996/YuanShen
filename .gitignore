@@ -1,3 +1,10 @@
 /.venv
 /static
 /__pycache__
+/methods/__pycache__
+/templates/__pycache__
+/routes/__pycache__
+/routes/maimai50/__pycache__
+.routes/admin/__pycache__
+/api/__pycache__
+/api/maimai50/__pycache__
