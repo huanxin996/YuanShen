@@ -114,7 +114,6 @@ async def music_play_data(qqid: int, songs: str) -> Union[str, Image.Image]:
         diff: List[Union[PlayInfoDev, PlayInfoDefault, None]]
         if not maiApi.token:
             raw = await maiApi.query_user_dev2(qqid=qqid, music_id=songs)
-            log.debug(f'获取数据: {raw}')
             data: Dict[str, List[Dict[str, Union[float, str, int]]]] = raw
             if not data:
                 return '您未游玩该曲目'
@@ -125,9 +124,7 @@ async def music_play_data(qqid: int, songs: str) -> Union[str, Image.Image]:
             dev = True
         else:
             version = list(set(_v for _v in plate_to_version.values()))
-            log.debug(f'获取版本号: {version}')
             data = await maiApi.query_user('plate', qqid=qqid, version=version)
-            log.debug(f'获取数据: {data}')
 
             music = mai.total_list.by_id(songs)
             _temp = [None for _ in music.ds]

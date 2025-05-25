@@ -15,7 +15,7 @@ class MinfoBase(BaseModel):
         extra = "forbid"
 
 class Music_infoBase(BaseModel):
-    music_data: Dict[str, Any] = Field(..., description="歌曲原始数据")
+    music_id: Optional[str] = Field(None, description="歌曲id")
     qq: Optional[int] = Field(None, description="玩家QQ号")
     name: Optional[str] = Field(None, description="玩家名称")
     class Config:

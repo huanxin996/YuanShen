@@ -156,11 +156,15 @@ async def create_minfo(item: MinfoBase):
 @router.post("/music_info")
 async def create_music_info(item: Music_infoBase):
     endpoint_name = "MusicInfo"
-    log.info(f"Received request: {item}，qq: {item.qq}, music: {item.music_data}")
-    if not (item.qq and item.name) or not item.music_data:
+    log.info(f"Received request: {item}，qq: {item.qq}, music: {item.music_id}")
+    if not (item.qq and item.name) or not item.music_id:
         log.error("缺少必要参数：qq 和 music_data")
         return JSONResponse(status_code=400, content={"returnCode": 100, "msg": "缺少必要参数：qq 和 music_data，请提供所有参数"})
-    return await safe_image_call(draw_music_info(qqid=item.qq, songs=item.music_data), endpoint_name)
+    music = mai.total_list.by_id(item.music_id)
+    if not music:
+        log.error("未找到曲目，请检查曲名或ID是否正确")
+        return JSONResponse(status_code=400, content={"returnCode": 100, "msg": "未找到曲目，请检查曲名或ID是否正确"})
+    return await safe_image_call(draw_music_info(qqid=item.qq, songs=music), endpoint_name)
 
 @router.post("/rating_table")
 async def create_rating_table(item: Rating_tableBase):
