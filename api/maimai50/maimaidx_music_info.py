@@ -108,33 +108,33 @@ async def draw_music_info(music: Music, qqid: Optional[int] = None, user: Option
     return im
 
 
-async def music_play_data(qqid: int, songs: str) -> Union[str, Image.Image]:
+async def music_play_data(qqid: int, music_id: Union[str,list,int]) -> Union[str, Image.Image]:
     """谱面游玩"""
     try:
         diff: List[Union[PlayInfoDev, PlayInfoDefault, None]]
-        if not maiApi.token:
-            raw = await maiApi.query_user_dev2(qqid=qqid, music_id=songs)
-            data: Dict[str, List[Dict[str, Union[float, str, int]]]] = raw
+        if not maimaitoken:
+            data = await maiApi.query_user_post_dev(qqid=qqid, music_id=music_id)
             if not data:
-                return '您未游玩该曲目'
-            music = mai.total_list.by_id(songs)
+                raise MusicNotPlayError
+
+            music = mai.total_list.by_id(music_id)
             diff = [None for _ in music.ds]
-            for _d in data[songs]:
-                diff[_d['level_index']] = PlayInfoDev(**_d)
+            for _d in data:
+                diff[_d.level_index] = _d
             dev = True
         else:
             version = list(set(_v for _v in plate_to_version.values()))
-            data = await maiApi.query_user('plate', qqid=qqid, version=version)
+            data = await maiApi.query_user_plate(qqid=qqid, version=version)
 
-            music = mai.total_list.by_id(songs)
+            music = mai.total_list.by_id(music_id)
             _temp = [None for _ in music.ds]
             diff = copy.deepcopy(_temp)
 
-            for _d in data['verlist']:
-                if _d['id'] == int(songs):
-                    diff[_d['level_index']] = PlayInfoDefault(**_d)
+            for _d in data:
+                if _d.song_id == int(music_id):
+                    diff[_d.level_index] = _d
             if diff == _temp:
-                return '您未游玩该曲目'
+                raise MusicNotPlayError
             dev = False
 
         im = Image.open(maimaidir / 'info_bg.png').convert('RGBA')
@@ -144,7 +144,7 @@ async def music_play_data(qqid: int, songs: str) -> Union[str, Image.Image]:
         hy = DrawText(dr, HANYI)
         sy = DrawText(dr, SIYUAN)
 
-        cover = Image.open(await maiApi.download_music_pictrue(songs))
+        cover = Image.open(await maiApi.download_music_pictrue(music_id))
         im.alpha_composite(cover.resize((450, 450)), (125, 365))
         im.alpha_composite(Image.open(maimaidir / f'info-{category[music.basic_info.genre]}.png').convert('RGBA'), (120, 355))
         im.alpha_composite(Image.open(maimaidir / f'{music.basic_info.version}.png').convert('RGBA').resize((220, 109)), (455, 295))

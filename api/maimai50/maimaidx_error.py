@@ -28,3 +28,8 @@ class CoverError(Exception):
 
 class UnknownError(Exception):
     """未知错误"""
+
+class MusicNotPlayError(Exception):
+    
+    def __str__(self) -> str:
+        return '您未游玩该曲目'

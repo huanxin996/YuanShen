@@ -1,0 +1,112 @@
+2025-05-28 18:05:00,538 | INFO     | uvicorn.error:_serve:83 - Started server process [26704]
+2025-05-28 18:05:00,539 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 18:05:00,541 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 18:05:01,051 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 18:05:25,604 | INFO     | uvicorn.error:_serve:83 - Started server process [46848]
+2025-05-28 18:05:25,605 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 18:05:25,607 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 18:05:25,609 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 18:07:49,479 | INFO     | uvicorn.access:send:476 - 127.0.0.1:58532 - "POST /maimai/minfo HTTP/1.1" 400
+2025-05-28 18:08:03,446 | INFO     | uvicorn.access:send:476 - 127.0.0.1:58544 - "POST /maimai/minfo HTTP/1.1" 500
+2025-05-28 18:09:20,629 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 18:09:20,742 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 18:09:20,742 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 18:09:20,742 | INFO     | uvicorn.error:_serve:93 - Finished server process [46848]
+2025-05-28 18:09:20,744 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 18:09:20,853 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 18:09:20,853 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 18:09:26,080 | INFO     | uvicorn.error:_serve:83 - Started server process [27224]
+2025-05-28 18:09:26,080 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 18:09:26,083 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 18:09:26,084 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 18:09:31,108 | INFO     | uvicorn.access:send:476 - 127.0.0.1:58705 - "POST /maimai/minfo HTTP/1.1" 500
+2025-05-28 18:11:02,566 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 18:11:02,671 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 18:11:02,671 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 18:11:02,672 | INFO     | uvicorn.error:_serve:93 - Finished server process [27224]
+2025-05-28 18:11:02,672 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 18:11:02,778 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 18:11:02,779 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 18:11:22,140 | INFO     | uvicorn.error:_serve:83 - Started server process [34776]
+2025-05-28 18:11:22,140 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 18:11:22,142 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 18:11:22,143 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 18:11:25,548 | INFO     | uvicorn.access:send:476 - 127.0.0.1:58912 - "POST /maimai/minfo HTTP/1.1" 500
+2025-05-28 18:11:57,948 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 18:11:58,060 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 18:11:58,061 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 18:11:58,061 | INFO     | uvicorn.error:_serve:93 - Finished server process [34776]
+2025-05-28 18:11:58,061 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 18:11:58,167 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 18:11:58,167 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 18:12:04,266 | INFO     | uvicorn.error:_serve:83 - Started server process [47148]
+2025-05-28 18:12:04,266 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 18:12:04,269 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 18:12:04,270 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 18:12:07,741 | INFO     | uvicorn.access:send:476 - 127.0.0.1:59000 - "POST /maimai/minfo HTTP/1.1" 500
+2025-05-28 19:15:32,021 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:15:32,130 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:15:32,130 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:15:32,131 | INFO     | uvicorn.error:_serve:93 - Finished server process [47148]
+2025-05-28 19:15:32,131 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:15:32,241 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:15:32,241 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:15:37,098 | INFO     | uvicorn.error:_serve:83 - Started server process [50608]
+2025-05-28 19:15:37,098 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 19:15:37,101 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 19:15:37,102 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 19:16:24,787 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:16:24,890 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:16:24,890 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:16:24,890 | INFO     | uvicorn.error:_serve:93 - Finished server process [50608]
+2025-05-28 19:16:24,891 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:16:24,993 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:16:24,993 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:17:02,590 | INFO     | uvicorn.error:_serve:83 - Started server process [30760]
+2025-05-28 19:17:02,590 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 19:17:02,592 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 19:17:02,593 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 19:17:06,900 | INFO     | uvicorn.access:send:476 - 127.0.0.1:64051 - "POST /maimai/minfo HTTP/1.1" 500
+2025-05-28 19:17:27,490 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:17:27,597 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:17:27,597 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:17:27,597 | INFO     | uvicorn.error:_serve:93 - Finished server process [30760]
+2025-05-28 19:17:27,598 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:17:27,711 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:17:27,711 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:17:34,213 | INFO     | uvicorn.error:_serve:83 - Started server process [26544]
+2025-05-28 19:17:34,214 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 19:17:34,216 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 19:17:34,217 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 19:17:36,371 | INFO     | uvicorn.access:send:476 - 127.0.0.1:64106 - "POST /maimai/minfo HTTP/1.1" 500
+2025-05-28 19:18:14,377 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:18:14,489 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:18:14,489 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:18:14,489 | INFO     | uvicorn.error:_serve:93 - Finished server process [26544]
+2025-05-28 19:18:14,490 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:18:14,598 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:18:14,598 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:18:19,272 | INFO     | uvicorn.error:_serve:83 - Started server process [48096]
+2025-05-28 19:18:19,272 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 19:18:19,274 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 19:18:19,275 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 19:18:23,723 | INFO     | uvicorn.access:send:476 - 127.0.0.1:64178 - "POST /maimai/minfo HTTP/1.1" 200
+2025-05-28 19:20:14,273 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:20:14,380 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:20:14,381 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:20:14,381 | INFO     | uvicorn.error:_serve:93 - Finished server process [48096]
+2025-05-28 19:20:14,381 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:20:14,490 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:20:14,490 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:22:26,758 | INFO     | uvicorn.error:_serve:83 - Started server process [32440]
+2025-05-28 19:22:26,758 | INFO     | uvicorn.error:startup:48 - Waiting for application startup.
+2025-05-28 19:22:26,762 | INFO     | uvicorn.error:startup:62 - Application startup complete.
+2025-05-28 19:22:26,763 | INFO     | uvicorn.error:_log_started_message:215 - Uvicorn running on http://0.0.0.0:9090 (Press CTRL+C to quit)
+2025-05-28 19:22:34,377 | INFO     | uvicorn.access:send:476 - 127.0.0.1:64588 - "POST /maimai/minfo HTTP/1.1" 500
+2025-05-28 19:23:14,223 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:23:14,326 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:23:14,327 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.
+2025-05-28 19:23:14,327 | INFO     | uvicorn.error:_serve:93 - Finished server process [32440]
+2025-05-28 19:23:14,328 | INFO     | uvicorn.error:shutdown:263 - Shutting down
+2025-05-28 19:23:14,438 | INFO     | uvicorn.error:shutdown:67 - Waiting for application shutdown.
+2025-05-28 19:23:14,438 | INFO     | uvicorn.error:shutdown:76 - Application shutdown complete.

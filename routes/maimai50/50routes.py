@@ -35,7 +35,6 @@ async def process_image_result(image, endpoint_name: str) -> JSONResponse:
         log.error(f"{endpoint_name}: 图片生成失败")
         return JSONResponse(status_code=500, content={"returnCode": 101, "msg": "图片生成失败"})
     if not hasattr(image, 'save') or not callable(getattr(image, 'save', None)):
-        log.error(f"返回值不是有效图片对象: {type(image)}")
         return JSONResponse(status_code=500, content={"returnCode": 101, "msg": f"{image}"})
     base64_image = image_manager.image_to_base64(image)
     return JSONResponse(
@@ -130,16 +129,16 @@ async def create_fc50(item: B50Base):
 async def create_minfo(item: MinfoBase):
     try:
         endpoint_name = "MInfo"
-        log.info(f"Received request: {item}，qq: {item.qq}, songid: {item.songid}")
-        if not item.qq or not item.songid:
+        log.info(f"Received request: {item}，qq: {item.qq}, songid: {item.music_id}")
+        if not item.qq or not item.music_id:
             log.error("缺少必要参数：qq 和 songid")
             return JSONResponse(status_code=400, content={"returnCode": 100, "msg": "缺少必要参数：qq 和 songid，请提供所有参数"})
-        if mai.total_list.by_id(item.songid):
-            songs = item.songid
-        elif by_t := mai.total_list.by_title(item.songid):
+        if mai.total_list.by_id(item.music_id):
+            songs = item.music_id
+        elif by_t := mai.total_list.by_title(item.music_id):
             songs = by_t.id
         else:
-            aliases = mai.total_alias_list.by_alias(item.songid)
+            aliases = mai.total_alias_list.by_alias(item.music_id)
             if not aliases:
                 return JSONResponse(status_code=400, content={"returnCode": 100, "msg": "未找到曲目，请检查曲名或ID是否正确"})
             elif len(aliases) != 1:
@@ -149,7 +148,7 @@ async def create_minfo(item: MinfoBase):
                 return JSONResponse(status_code=400, content={"returnCode": 100, "msg": msg.strip()})
             else:
                 songs = str(aliases[0].SongID)
-        return await safe_image_call(music_play_data(qqid=item.qq, songs=songs), endpoint_name)
+        return await safe_image_call(music_play_data(qqid=item.qq, music_id=songs), endpoint_name)
     except Exception as e:
         return JSONResponse(status_code=500, content={"returnCode": 101, "msg": str(e)})
 
@@ -157,14 +156,14 @@ async def create_minfo(item: MinfoBase):
 async def create_music_info(item: Music_infoBase):
     endpoint_name = "MusicInfo"
     log.info(f"Received request: {item}，qq: {item.qq}, music: {item.music_id}")
-    if not (item.qq and item.name) or not item.music_id:
+    if not (item.qq or item.name) or not item.music_id:
         log.error("缺少必要参数：qq 和 music_data")
         return JSONResponse(status_code=400, content={"returnCode": 100, "msg": "缺少必要参数：qq 和 music_data，请提供所有参数"})
     music = mai.total_list.by_id(item.music_id)
     if not music:
         log.error("未找到曲目，请检查曲名或ID是否正确")
         return JSONResponse(status_code=400, content={"returnCode": 100, "msg": "未找到曲目，请检查曲名或ID是否正确"})
-    return await safe_image_call(draw_music_info(qqid=item.qq, songs=music), endpoint_name)
+    return await safe_image_call(draw_music_info(qqid=item.qq, music=music), endpoint_name)
 
 @router.post("/rating_table")
 async def create_rating_table(item: Rating_tableBase):

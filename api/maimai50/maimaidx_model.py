@@ -108,6 +108,13 @@ class UserInfo(BaseModel):
     rating: Optional[int]
     username: Optional[str]
 
+class _UserInfo(BaseModel):
+    
+    additional_rating: Optional[int]
+    nickname: Optional[str]
+    plate: Optional[str] = None
+    rating: Optional[int]
+    username: Optional[str]
 
 ##### PlayedInfo
 class PlayInfo(BaseModel):
@@ -141,3 +148,13 @@ class TableData(BaseModel):
 class PlanInfo(BaseModel):
     completed: Union[PlayInfoDefault, PlayInfoDev] = None
     unfinished: Union[PlayInfoDefault, PlayInfoDev] = None
+
+
+class PlayInfoDefault(PlayInfo):
+    
+    song_id: int = Field(alias='id')
+    table_level: list[int] = []
+
+class UserInfoDev(_UserInfo):
+    
+    records: Optional[List[PlayInfoDev]] = None

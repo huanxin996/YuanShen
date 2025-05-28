@@ -6,6 +6,7 @@ import httpx
 
 from .config import coverdir,maimaitoken
 from .maimaidx_error import *
+from .maimaidx_model import PlayInfoDefault, PlayInfoDev,UserInfoDev
 
 
 class MaimaiAPI:
@@ -372,6 +373,56 @@ class MaimaiAPI:
             result["user_general_data"] = user_data
 
         return result
+    
+    async def query_user_plate(
+        self,
+        *,
+        qqid: Optional[int] = None,
+        username: Optional[str] = None,
+        version: Optional[List[str]] = None
+    ) -> List[PlayInfoDefault]:
+        """
+        请求用户数据
+
+        Params:
+            `qqid`: 用户QQ
+            `username`: 查分器用户名
+            `version`: 版本
+        Returns:
+            `List[PlayInfoDefault]` 数据列表
+        """
+        json = {}
+        if qqid:
+            json['qq'] = qqid
+        if username:
+            json['username'] = username
+        if version:
+            json['version'] = version
+        result = await self._request('POST', self.MaiAPI + '/query/plate', json=json)
+        if not result['verlist']:
+            raise MusicNotPlayError
+
+        return [PlayInfoDefault.model_validate(d) for d in result['verlist']]
+
+    async def query_user_get_dev(self, *, qqid: Optional[int] = None, username: Optional[str] = None) -> UserInfoDev:
+        """
+        使用开发者接口获取用户数据，请确保拥有和输入了开发者 `token`
+
+        Params:
+            qqid: 用户QQ
+            username: 查分器用户名
+        Returns:
+            `UserInfoDev` 开发者用户信息
+        """
+        params = {}
+        if qqid:
+            params['qq'] = qqid
+        if username:
+            params['username'] = username
+        
+        result = await self._requestmai('GET', '/dev/player/records', params=params)
+        return UserInfoDev.model_validate(result)
+
     async def query_user_cum(self, *, qqid: Optional[int] = None, username: Optional[str] = None):
         """
     使用开发者接口获取用户寸歌数据, 并按照指定格式返回.
@@ -524,8 +575,39 @@ class MaimaiAPI:
         if username:
             json['username'] = username
         json['music_id'] = music_id
-        print(f"请求api:{self.MaiAPI},header头:{self.headers}，原始数据:{json}")
         return await self._request('POST', self.MaiAPI + f'/dev/player/record', headers=self.headers, json=json)
+
+    async def query_user_post_dev(
+        self,
+        *,
+        qqid: Optional[int] = None,
+        username: Optional[str] = None,
+        music_id: Union[str, int, List[Union[str, int]]]
+    ) -> List[PlayInfoDev]:
+        """
+        使用开发者接口获取用户指定曲目数据，请确保拥有和输入了开发者 `token`
+
+        Params:
+            `qqid`: 用户QQ
+            `username`: 查分器用户名
+            `music_id`: 曲目id，可以为单个ID或者列表
+        Returns:
+            `List[PlayInfoDev]` 开发者成绩列表
+        """
+        json = {}
+        if qqid:
+            json['qq'] = qqid
+        if username:
+            json['username'] = username
+        json['music_id'] = music_id
+        
+        result = await self._request('POST', self.MaiAPI + '/dev/player/record', json=json)
+        if result == {}:
+            raise MusicNotPlayError
+        
+        if isinstance(music_id, list):
+            return [PlayInfoDev.model_validate(d) for k, v in result.items() for d in v]
+        return [PlayInfoDev.model_validate(d) for d in result[str(music_id)]]
 
     async def rating_ranking(self):
         """获取查分器排行榜"""

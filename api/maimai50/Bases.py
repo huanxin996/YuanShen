@@ -9,7 +9,7 @@ class B50Base(BaseModel):
 
 class MinfoBase(BaseModel):
     qq: int = Field(..., description="玩家QQ号")
-    songid: Union[str, int] = Field(..., description="歌曲ID或名称")
+    music_id: Union[str, int] = Field(..., description="歌曲ID或名称")
     
     class Config:
         extra = "forbid"
