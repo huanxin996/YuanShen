@@ -80,12 +80,6 @@ async def music_global_data(music: Music, level_index: int) -> Image.Image:
 async def rise_score_data(qqid: int, username: Optional[str], rating: str, score: str, nickname: Optional[str] = None) -> str:
     """
     上分数据
-    
-    - `qqid` : 用户QQ
-    - `username` : 查分器用户名
-    - `rating` : 定数
-    - `score` : 分数
-    - `nickname` : 用户昵称
     """
     try:
         dx_ra_lowest = 999
@@ -96,7 +90,6 @@ async def rise_score_data(qqid: int, username: Optional[str], rating: str, score
         music_sd_list: List[List[Union[Music, str, float, int]]] = []
 
         player_data = await maiApi.query_user('player', qqid=qqid, username=username)
-
         for dx in player_data['charts']['dx']:
             dx_ra_lowest = min(dx_ra_lowest, dx['ra'])
             player_dx_list.append([int(dx['song_id']), int(dx["level_index"]), int(dx['ra'])])
@@ -106,37 +99,62 @@ async def rise_score_data(qqid: int, username: Optional[str], rating: str, score
         player_dx_id_list = [[d[0], d[1]] for d in player_dx_list]
         player_sd_id_list = [[s[0], s[1]] for s in player_sd_list]
 
+        all_possible_ds = set()
+        all_possible_titles = set()
+        all_possible_scores = set()
+
         for music in mai.total_list:
             for i, ds in enumerate(music.ds):
                 for achievement in realAchievementList[f'{ds:.1f}']:
-                    if rating and music.level[i] != rating: continue
+                    if rating and music.level[i] != rating:
+                        continue
                     if f'{achievement:.1f}' == '100.5':
                         index_score = 12
                     else:
                         index_score = [index for index, acc in enumerate(achievementList[:-1]) if acc <= achievement < achievementList[index + 1]][0]
+                    music_ra = computeRa(ds, achievement)
                     if music.basic_info.is_new:
-                        music_ra = computeRa(ds, achievement)
-                        if music_ra < dx_ra_lowest: continue
+                        if music_ra < dx_ra_lowest:
+                            continue
+                        all_possible_ds.add(ds)
+                        all_possible_titles.add(music.title)
                         if [int(music.id), i] in player_dx_id_list:
                             player_ra = player_dx_list[player_dx_id_list.index([int(music.id), i])][2]
+                            all_possible_scores.add(music_ra - player_ra)
                             if music_ra - player_ra == int(score) and [int(music.id), i, music_ra] not in player_dx_list:
                                 music_dx_list.append([music, diffs[i], ds, achievement, scoreRank[index_score + 1].upper(), music_ra])
                         else:
+                            all_possible_scores.add(music_ra - dx_ra_lowest)
                             if music_ra - dx_ra_lowest == int(score) and [int(music.id), i, music_ra] not in player_dx_list:
                                 music_dx_list.append([music, diffs[i], ds, achievement, scoreRank[index_score + 1].upper(), music_ra])
                     else:
-                        music_ra = computeRa(ds, achievement)
-                        if music_ra < sd_ra_lowest: continue
+                        if music_ra < sd_ra_lowest:
+                            continue
+                        all_possible_ds.add(ds)
+                        all_possible_titles.add(music.title)
                         if [int(music.id), i] in player_sd_id_list:
                             player_ra = player_sd_list[player_sd_id_list.index([int(music.id), i])][2]
+                            all_possible_scores.add(music_ra - player_ra)
                             if music_ra - player_ra == int(score) and [int(music.id), i, music_ra] not in player_sd_list:
                                 music_sd_list.append([music, diffs[i], ds, achievement, scoreRank[index_score + 1].upper(), music_ra])
                         else:
+                            all_possible_scores.add(music_ra - sd_ra_lowest)
                             if music_ra - sd_ra_lowest == int(score) and [int(music.id), i, music_ra] not in player_sd_list:
                                 music_sd_list.append([music, diffs[i], ds, achievement, scoreRank[index_score + 1].upper(), music_ra])
 
         if len(music_dx_list) == 0 and len(music_sd_list) == 0:
-            return 'Milk找不到适合的乐曲啦'
+            if all_possible_ds and all_possible_scores:
+                ds_min = min(all_possible_ds)
+                ds_max = max(all_possible_ds)
+                score_min = min(all_possible_scores)
+                score_max = max(all_possible_scores)
+                msg = f'Milk找不到适合的乐曲啦。\n'
+                msg += f'当前条件下可推荐的乐曲定数范围为：{ds_min:.1f} ~ {ds_max:.1f}，共{len(all_possible_titles)}首。\n'
+                msg += f'可尝试的上分分数范围为：{score_min} ~ {score_max}。\n'
+                msg += '建议尝试调整定数或分数参数再试试哦~'
+            else:
+                msg = 'Milk找不到适合的乐曲啦，当前条件下没有可推荐的乐曲。'
+            return msg
 
         appellation = nickname if nickname else '您'
         result = ''

@@ -1,11 +1,9 @@
-import uvicorn, asyncio, signal,os,sys
-from api.maimai50.maimaidx_music import initialize_maimai_data
+import uvicorn, asyncio, signal, os, sys
 from loguru import logger as log
 from fastapi import FastAPI
 from config import project_root
 from methods.routes_manner import route_manager
 from methods.loggers import get_log_config
-
 
 app = FastAPI()
 server = None
@@ -13,7 +11,6 @@ should_exit = False
 
 async def init_app():
     global app
-    await initialize_maimai_data()
     route_manager.discover_routes()
     route_manager.register_all_routes(app)
     log.info("验证路由保护中间件是否生效...")
@@ -29,7 +26,6 @@ async def init_app():
     else:
         log.warning("应用没有user_middleware属性，路由保护可能未生效")
     log.info(f"应用初始化完成，共注册 {len(app.routes)} 个路由")
-
 
 async def shutdown(signal_type=None):
     global should_exit
@@ -58,10 +54,9 @@ async def run_server_async():
 
     for sig in (signal.SIGINT, signal.SIGTERM):
         signal.signal(sig, signal_handler)
-    
     if hasattr(signal, 'SIGHUP'):
         signal.signal(signal.SIGHUP, signal_handler)
-    
+
     # 配置日志
     custom_log_config = get_log_config()
 
@@ -72,9 +67,9 @@ async def run_server_async():
     ssl_dir = project_root / "ssl"
     cert_path = ssl_dir / "cert.pem"
     key_path = ssl_dir / "cert.key"
-    
+
     ssl_enabled = cert_path.exists() and key_path.exists()
-    
+
     if ssl_enabled:
         log.info(f"找到SSL证书，将以HTTPS模式启动")
         ssl_config = {
@@ -86,19 +81,20 @@ async def run_server_async():
         log.warning(f"SSL证书不存在，将以HTTP模式启动")
         ssl_config = {}
         protocol = "HTTP"
-    
+
     log.info(f"服务器正在启动... 运行环境: {'Linux/Ubuntu' if sys.platform.startswith('linux') else 'Windows'}, 协议: {protocol}")
     config = uvicorn.Config(
         app,
         host="0.0.0.0",
-        port=9090,
+        port=9091,
         log_level="info",
         reload=False,
         log_config=custom_log_config,
         **ssl_config
     )
+    global server
     server = uvicorn.Server(config)
-    
+
     try:
         await server.serve()
     except Exception as e:
