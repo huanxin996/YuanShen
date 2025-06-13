@@ -1,72 +1,17 @@
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, Field
+from typing import Optional, List, Union
 
 class DeviceEventBase(BaseModel):
     """设备事件基础模型"""
-    event_type: str
-    timestamp: int
-    date: str
-    action: str
-    description: str
+    event_type: str = Field(..., description="事件类型")
+    timestamp: int = Field(..., description="时间戳(毫秒)")
+    date: str = Field(..., description="日期")
+    action: str = Field(..., description="动作")
+    description: str = Field(..., description="描述")
 
 class KeepAliveData(BaseModel):
     """保活数据模型"""
-    live: int
-
-class DeviceStatus(BaseModel):
-    """设备状态模型"""
-    is_locked: bool
-    last_unlock_time: Optional[int] = None
-    last_lock_time: Optional[int] = None
-    last_update: float
-    last_update_str: str
-    last_event: str
-    timezone: str = "Asia/Shanghai"
-    created_time: Optional[str] = None
-    last_keep_alive: Optional[float] = None
-    last_keep_alive_str: Optional[str] = None
-
-class DailyRecord(BaseModel):
-    """每日记录模型"""
-    date: str
-    screen_on_time: float = 0.0
-    lock_events: list = []
-    unlock_events: list = []
-    usage_sessions: list = []
-    created_time: float
-    created_time_str: str
-    last_update: float
-    timezone: str = "Asia/Shanghai"
-
-class UsageSession(BaseModel):
-    """使用会话模型"""
-    unlock_time: int
-    lock_time: int
-    duration: float
-    unlock_time_str: str
-    lock_time_str: str
-    duration_str: str
-
-class EventInfo(BaseModel):
-    """事件信息模型"""
-    timestamp: int
-    time: str
-    action: str
-    beijing_time: str
-
-class ApiResponse(BaseModel):
-    """API响应基础模型"""
-    returnCode: int
-    msg: str
-    data: Optional[dict] = None
-
-class DeviceSummary(BaseModel):
-    """设备摘要模型"""
-    device_id: str
-    current_status: dict
-    current_session_time: str
-    today_summary: dict
-
+    live: int = Field(default=0, description="保活标识")
 
 class UptimeData(BaseModel):
     """系统运行时间模型"""
@@ -110,7 +55,7 @@ class ThermalData(BaseModel):
     """温度信息模型"""
     full_info: str
     battery_celsius: Optional[float] = None
-    thermal_zones: list[ThermalZone] = []
+    thermal_zones: List[ThermalZone] = Field(default_factory=list)
 
 class StorageInfo(BaseModel):
     """存储信息模型"""
@@ -154,10 +99,22 @@ class DeviceStatusData(BaseModel):
     """设备状态数据模型"""
     uptime: Optional[UptimeData] = None
     network: Optional[NetworkData] = None
-    cpu: CPUData
-    thermal: ThermalData
-    storage: StorageData
+    cpu: Optional[CPUData] = None
+    thermal: Optional[ThermalData] = None
+    storage: Optional[StorageData] = None
     foreground_app: Optional[ForegroundAppData] = None
     battery: Optional[BatteryData] = None
     timestamp: int
     device_id: str
+
+class ApiResponse(BaseModel):
+    """API响应统一模型"""
+    returnCode: int = Field(..., description="返回码: 1=成功, 100=客户端错误, 101=服务器错误")
+    msg: str = Field(..., description="返回消息")
+    data: Optional[dict] = Field(None, description="返回数据")
+
+class HeaderValidationResult(BaseModel):
+    """Header验证结果模型"""
+    headers: dict
+    is_valid: bool
+    error_message: Optional[str] = None
