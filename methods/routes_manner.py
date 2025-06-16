@@ -9,7 +9,7 @@ from methods.globalvar import GlobalVars
 from typing import Dict, Set, List, Tuple, Pattern, Optional, Any
 from methods.token_manner import verify_api_token, token_manager
 from loguru import logger as log
-from config import project_root,favicon_path
+from config import project_root,favicon_path,log_level
 
 route_protection_middleware_instance = None
 
@@ -140,16 +140,18 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
             
             if not is_valid:
                 log.warning(f"Token验证失败: {path} - {message}")
+                datas ={
+                            "error_type": "token_verification_failed",
+                            "api_path": original_path,
+                        }
+                if log_level == "debug":
+                    datas["debug"] = debug_info
                 return JSONResponse(
                     status_code=401,
                     content={
                         "returnCode": 401,
                         "msg": f"Token验证失败: {message}",
-                        "data": {
-                            "error_type": "token_verification_failed",
-                            "api_path": original_path,
-                            "debug_info": debug_info if log.level.no <= 10 else None  # 仅在DEBUG模式显示调试信息
-                        }
+                        "data": datas
                     }
                 )
             else:

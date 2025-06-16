@@ -4,7 +4,7 @@ import secrets
 from typing import Dict, Optional, Set, Tuple, Any
 from loguru import logger as log
 from methods.globalvar import GlobalVars
-from config import api_default_token, api_default_token_expire
+from config import api_default_token, api_default_token_expire,log_level
 
 class TokenManager:
     """API Token 管理器"""
@@ -217,7 +217,7 @@ class TokenManager:
             
             GlobalVars.set_to_table("token_usage", usage_key, usage_data)
             
-            if not success or log.level.no <= 10:
+            if not success or log_level == "debug":
                 log.debug(f"Token使用记录: API={api_path}, 成功={success}, 消息={message}, "
                          f"Token前缀={token[:8] if token else 'None'}...")
                 

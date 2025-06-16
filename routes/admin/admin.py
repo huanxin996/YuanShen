@@ -109,10 +109,10 @@ def get_system_info():
 def register_routes(app: FastAPI):
     log.info(f"注册admin路由，前缀：{admin_router.prefix}")
     app.include_router(admin_router)
-    route_manager.register_static_route(app, "/static", "routes/admin/static", name="admin_static")
+    route_manager.register_static_route(app, "/admin/static", "routes/admin/static", name="admin_static")
     route_manager.ensure_static_routes_allowed(app)
 
-templates = Jinja2Templates(directory="routes/admi/adminn/templates")
+templates = Jinja2Templates(directory="routes/admin/templates")
 
 @admin_router.get("/manage")
 async def admin_manage(request: Request):
@@ -366,49 +366,65 @@ async def token_action(
             status_code=500,
             content={"error": f"操作失败: {str(e)}"}
         )
-
-@admin_router.get("/token/info/{path:path}")
-async def get_token_info(path: str):
-    """获取指定API的token信息"""
+@admin_router.post("/token/query")
+async def token_query(
+    request: Request,
+    api_path: str = Form(...),
+    query_type: str = Form(...),  # "info" 或 "usage"
+    days: int = Form(default=7)
+):
+    """查询指定API的token信息或使用统计"""
     try:
-        # 添加开头的斜杠
-        api_path = f"/{path}" if not path.startswith("/") else path
+        # 确保API路径格式正确
+        if not api_path.startswith("/"):
+            api_path = f"/{api_path}"
         
-        config = token_manager.get_api_config(api_path)
-        all_configs = token_manager.get_all_configs()
-        
-        return JSONResponse(content={
-            "api_path": api_path,
-            "token_enabled": config['token_enabled'],
-            "has_custom_token": config['has_custom_token'],
-            "custom_token": config['custom_token'] if config['has_custom_token'] else "",
-            "expire_time_ms": config['expire_time_ms'],
-            "default_token": all_configs['default_token'],
-            "default_expire_ms": all_configs['default_expire_ms']
-        })
+        if query_type == "info":
+            # 获取token配置信息
+            config = token_manager.get_api_config(api_path)
+            all_configs = token_manager.get_all_configs()
+            
+            return JSONResponse(content={
+                "success": True,
+                "query_type": "info",
+                "api_path": api_path,
+                "token_enabled": config['token_enabled'],
+                "has_custom_token": config['has_custom_token'],
+                "custom_token": config['custom_token'] if config['has_custom_token'] else "",
+                "expire_time_ms": config['expire_time_ms'],
+                "default_token": all_configs['default_token'],
+                "default_expire_ms": all_configs['default_expire_ms']
+            })
+            
+        elif query_type == "usage":
+            # 获取token使用统计
+            usage_stats = token_manager.get_token_usage_stats(api_path, days)
+            
+            return JSONResponse(content={
+                "success": True,
+                "query_type": "usage",
+                "api_path": api_path,
+                "days": days,
+                "usage_stats": usage_stats
+            })
+            
+        else:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "error": f"无效的查询类型: {query_type}，支持的类型: info, usage"
+                }
+            )
         
     except Exception as e:
-        log.error(f"获取token信息失败: {e}")
+        log.error(f"Token查询失败: query_type={query_type}, api_path={api_path}, error={e}")
         return JSONResponse(
             status_code=500,
-            content={"error": f"获取信息失败: {str(e)}"}
-        )
-
-
-@admin_router.get("/token/usage/{path:path}")
-async def get_token_usage(path: str, days: int = 7):
-    """获取指定API的token使用统计"""
-    try:
-        # 添加开头的斜杠
-        api_path = f"/{path}" if not path.startswith("/") else path
-        
-        usage_stats = token_manager.get_token_usage_stats(api_path, days)
-        
-        return JSONResponse(content=usage_stats)
-        
-    except Exception as e:
-        log.error(f"获取token使用统计失败: {e}")
-        return JSONResponse(
-            status_code=500,
-            content={"error": f"获取统计失败: {str(e)}"}
+            content={
+                "success": False,
+                "error": f"查询失败: {str(e)}",
+                "query_type": query_type,
+                "api_path": api_path
+            }
         )

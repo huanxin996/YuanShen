@@ -81,7 +81,7 @@
                 
                 <div class="form-group">
                     <label>API路径:</label>
-                    <span id="modalApiPathDisplay"></span>
+                    <span id="modalApiPathDisplay" class="api-path-display"></span>
                 </div>
                 
                 <div class="form-group">
@@ -132,121 +132,7 @@
     </div>
 </div>
 
-<script>
-// Token模态框相关JavaScript
-let currentApiPath = '';
-
-async function openTokenModal(apiPath) {
-    currentApiPath = apiPath;
-    document.getElementById('modalApiPath').value = apiPath;
-    document.getElementById('modalApiPathDisplay').textContent = apiPath;
-    
-    // 获取当前token信息
-    try {
-        const response = await fetch(`/admin/token/info${apiPath}`);
-        const data = await response.json();
-        
-        updateModalStatus(data);
-        updateCurrentTokenInfo(data);
-        
-    } catch (error) {
-        console.error('获取token信息失败:', error);
-    }
-    
-    document.getElementById('tokenModal').style.display = 'block';
-}
-
-function closeTokenModal() {
-    document.getElementById('tokenModal').style.display = 'none';
-    currentApiPath = '';
-}
-
-function updateModalStatus(data) {
-    const statusElement = document.getElementById('modalCurrentStatus');
-    if (data.token_enabled) {
-        if (data.has_custom_token) {
-            statusElement.innerHTML = '<span class="badge custom">已启用 (自定义Token)</span>';
-        } else {
-            statusElement.innerHTML = '<span class="badge default">已启用 (默认Token)</span>';
-        }
-    } else {
-        statusElement.innerHTML = '<span class="badge disabled">未启用</span>';
-    }
-    
-    // 更新表单字段
-    document.getElementById('customToken').value = data.custom_token || '';
-    document.getElementById('expireTime').value = data.expire_time_ms;
-}
-
-function updateCurrentTokenInfo(data) {
-    const infoElement = document.getElementById('currentTokenInfo');
-    
-    let infoHtml = '<div class="info-section"><h4>当前配置信息</h4>';
-    
-    if (data.token_enabled) {
-        infoHtml += `
-            <p><strong>Token状态:</strong> <span class="text-success">已启用</span></p>
-            <p><strong>当前Token:</strong> <code>${data.has_custom_token ? data.custom_token : data.default_token}</code></p>
-            <p><strong>Token类型:</strong> ${data.has_custom_token ? '自定义' : '默认'}</p>
-            <p><strong>过期时间:</strong> ${Math.round(data.expire_time_ms / 1000)} 秒</p>
-        `;
-    } else {
-        infoHtml += '<p><strong>Token状态:</strong> <span class="text-danger">未启用</span></p>';
-    }
-    
-    infoHtml += '</div>';
-    infoElement.innerHTML = infoHtml;
-}
-
-function generateRandomToken() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    let token = '';
-    for (let i = 0; i < 32; i++) {
-        token += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    document.getElementById('customToken').value = token;
-}
-
-function setTokenAction(action) {
-    document.getElementById('tokenAction').value = action;
-    
-    // 根据不同操作显示确认信息
-    let confirmMessage = '';
-    switch (action) {
-        case 'enable':
-            confirmMessage = '确定要启用Token验证吗？';
-            break;
-        case 'disable':
-            confirmMessage = '确定要禁用Token验证吗？这将允许无需token访问此API。';
-            break;
-        case 'set_custom':
-            const customToken = document.getElementById('customToken').value;
-            if (!customToken) {
-                alert('请输入自定义Token！');
-                return;
-            }
-            confirmMessage = `确定要设置自定义Token为: ${customToken} 吗？`;
-            break;
-        case 'generate':
-            confirmMessage = '确定要生成新的随机Token吗？这将替换当前Token。';
-            break;
-        case 'remove_custom':
-            confirmMessage = '确定要移除自定义Token并使用默认Token吗？';
-            break;
-    }
-    
-    if (confirm(confirmMessage)) {
-        document.getElementById('tokenForm').submit();
-    }
-}
-
-// 点击模态框外部关闭
-window.onclick = function(event) {
-    const modal = document.getElementById('tokenModal');
-    if (event.target === modal) {
-        closeTokenModal();
-    }
-}
-</script>
+<!-- 引入Token管理的JavaScript文件 -->
+<script src="/admin/static/js/admin_token.js"></script>
 
 {% include 'admin_footer.html' %}
