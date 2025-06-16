@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Request, Form, FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from methods.routes_manner import route_manager
+from methods.token_manner import token_manager
 from methods.globalvar import GlobalVars
 from loguru import logger as log
 import time, datetime, platform, os, psutil
@@ -108,10 +109,10 @@ def get_system_info():
 def register_routes(app: FastAPI):
     log.info(f"注册admin路由，前缀：{admin_router.prefix}")
     app.include_router(admin_router)
-    route_manager.register_static_route(app, "/admin/static", "routes/admin/static", name="admin_static")
+    route_manager.register_static_route(app, "/static", "routes/admin/static", name="admin_static")
     route_manager.ensure_static_routes_allowed(app)
 
-templates = Jinja2Templates(directory="routes/admin/templates")
+templates = Jinja2Templates(directory="routes/admi/adminn/templates")
 
 @admin_router.get("/manage")
 async def admin_manage(request: Request):
@@ -144,6 +145,9 @@ async def admin_manage(request: Request):
     else:
         log.warning("api_stats表不存在，无法加载API统计数据")
     
+    # 获取token配置信息
+    token_configs = token_manager.get_all_configs()
+    
     for path in sorted(routes):
         if path.startswith("/admin") or path.startswith("/static") or path.startswith("/favicon.ico"):
             continue
@@ -151,19 +155,52 @@ async def admin_manage(request: Request):
         if search_query and search_query.lower() not in path.lower():
             continue
             
+        # 路由状态信息
         status = "禁用" if path in disabled else "启用"
         action = "enable" if path in disabled else "disable"
         btn_class = "enable" if action == "enable" else "disable"
         btn_text = "启用" if action == "enable" else "禁用"
         access_count = api_stats.get(path, 0)
-        route_list.append((path, status, action, btn_class, btn_text, access_count))
+        
+        # Token配置信息
+        token_enabled = token_manager.is_token_enabled(path)
+        api_config = token_manager.get_api_config(path)
+
+        # Token显示信息
+        if token_enabled:
+            if api_config['has_custom_token']:
+                token_display = f"自定义: {api_config['custom_token'][:8]}..."
+                token_class = "custom"
+            else:
+                token_display = f"默认: {token_configs['default_token'][:8]}..."
+                token_class = "default"
+        else:
+            token_display = "未启用"
+            token_class = "disabled"
+        
+        route_list.append({
+            'path': path,
+            'status': status,
+            'action': action,
+            'btn_class': btn_class,
+            'btn_text': btn_text,
+            'access_count': access_count,
+            'token_enabled': token_enabled,
+            'token_display': token_display,
+            'token_class': token_class,
+            'has_custom_token': api_config['has_custom_token'],
+            'expire_time_ms': api_config['expire_time_ms']
+        })
     
     return templates.TemplateResponse("admin_index.html", {
         "request": request, 
         "route_list": route_list,
         "current_page": "routes",
-        "search_query": search_query
+        "search_query": search_query,
+        "default_token": token_configs['default_token'],
+        "default_expire": token_configs['default_expire_ms']
     })
+        
 
 @admin_router.get("/stats")
 async def admin_stats(request: Request):
@@ -274,13 +311,104 @@ async def admin_settings(request: Request):
         "current_page": "settings"
     })
 
-@admin_router.post("/action")
-async def admin_action(request: Request, action: str = Form(...)):
-    app = request.app
-    act, path = action.split(":", 1)
-    if act == "disable":
-        route_manager.disable_api(app, path)
-    elif act == "enable":
-        route_manager.enable_api(app, path)
-    
-    return RedirectResponse(url="/admin/manage", status_code=303)
+@admin_router.post("/token/action")
+async def token_action(
+    request: Request,
+    api_path: str = Form(...),
+    token_action: str = Form(...),
+    custom_token: str = Form(default=""),
+    expire_time: int = Form(default=3600000)
+):
+    """处理Token相关操作"""
+    try:
+        if token_action == "enable":
+            # 启用token验证
+            token_manager.enable_token_for_api(api_path)
+            if custom_token:
+                token_manager.set_api_token(api_path, custom_token, expire_time)
+            log.info(f"为API启用token验证: {api_path}")
+            
+        elif token_action == "disable":
+            # 禁用token验证
+            token_manager.disable_token_for_api(api_path)
+            log.info(f"为API禁用token验证: {api_path}")
+        
+        elif token_action == "set_custom":
+            # 设置自定义token
+            if not custom_token:
+                return JSONResponse(
+                    status_code=400,
+                    content={"error": "自定义token不能为空"}
+                )
+            token_manager.enable_token_for_api(api_path)
+            token_manager.set_api_token(api_path, custom_token, expire_time)
+            log.info(f"为API设置自定义token: {api_path}")
+            
+        elif token_action == "generate":
+            # 生成新token
+            token_manager.enable_token_for_api(api_path)
+            new_token = token_manager.generate_token(api_path, 32)
+            if expire_time != 3600000:  # 如果不是默认过期时间
+                token_manager.set_api_token(api_path, new_token, expire_time)
+            log.info(f"为API生成新token: {api_path}")
+            
+        elif token_action == "remove_custom":
+            # 移除自定义token，使用默认token
+            token_manager.remove_api_token(api_path)
+            # 保持token验证启用状态
+            log.info(f"移除API自定义token: {api_path}")
+        
+        return RedirectResponse(url="/admin/manage", status_code=303)
+        
+    except Exception as e:
+        log.error(f"Token操作失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"操作失败: {str(e)}"}
+        )
+
+@admin_router.get("/token/info/{path:path}")
+async def get_token_info(path: str):
+    """获取指定API的token信息"""
+    try:
+        # 添加开头的斜杠
+        api_path = f"/{path}" if not path.startswith("/") else path
+        
+        config = token_manager.get_api_config(api_path)
+        all_configs = token_manager.get_all_configs()
+        
+        return JSONResponse(content={
+            "api_path": api_path,
+            "token_enabled": config['token_enabled'],
+            "has_custom_token": config['has_custom_token'],
+            "custom_token": config['custom_token'] if config['has_custom_token'] else "",
+            "expire_time_ms": config['expire_time_ms'],
+            "default_token": all_configs['default_token'],
+            "default_expire_ms": all_configs['default_expire_ms']
+        })
+        
+    except Exception as e:
+        log.error(f"获取token信息失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"获取信息失败: {str(e)}"}
+        )
+
+
+@admin_router.get("/token/usage/{path:path}")
+async def get_token_usage(path: str, days: int = 7):
+    """获取指定API的token使用统计"""
+    try:
+        # 添加开头的斜杠
+        api_path = f"/{path}" if not path.startswith("/") else path
+        
+        usage_stats = token_manager.get_token_usage_stats(api_path, days)
+        
+        return JSONResponse(content=usage_stats)
+        
+    except Exception as e:
+        log.error(f"获取token使用统计失败: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"获取统计失败: {str(e)}"}
+        )

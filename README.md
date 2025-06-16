@@ -51,6 +51,14 @@ YuanShen 是一个基于 FastAPI 的高性能 API 框架，支持多种数据服
 
 👉 [查看完整admin模块文档](./docs/ADMIN_API_README.md)
 
+### 3. `looking` 模块
+
+- 提供 looking.moe 站相关接口
+- 提供 模块后端接口
+
+👉 [查看完整looking模块文档](./docs/LOOKING_API_README.md)
+
+
 ---
 
 ## ⚙️ 安装与配置

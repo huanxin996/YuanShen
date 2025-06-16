@@ -1,10 +1,19 @@
 from typing import Optional, Dict, Any
+from datetime import datetime
 from loguru import logger as log
 from fastapi import APIRouter, Request, Header, HTTPException
+try:
+    from zoneinfo import ZoneInfo
+    BEIJING_TZ = ZoneInfo("Asia/Shanghai")
+except ImportError:
+    import pytz
+    BEIJING_TZ = pytz.timezone("Asia/Shanghai")
 from fastapi.responses import JSONResponse
 import time
 
 from methods.globalvar import GlobalVars
+from api.looking.alivemag import register_device_alive, get_alive_manager_status, force_check_device_alive, get_device_alive_info
+
 from api.looking.Bases import DeviceEventBase, KeepAliveData, ApiResponse
 from api.looking.utils import (
     get_beijing_now, verify_signature, init_device_table,
@@ -16,6 +25,7 @@ from api.looking.utils import (
 )
 
 router = APIRouter(prefix="/looking", tags=["device_monitor"])
+
 
 # 常量定义
 REQUIRED_EVENT_HEADERS = [
@@ -33,6 +43,9 @@ REQUIRED_KEEPALIVE_HEADERS = [
     "x-device-id", "x-device-model", "x-device-brand", 
     "x-android-version", "x-sdk-int", "x-event-type"
 ]
+
+# 保活签名验证的时间容差（秒）
+KEEP_ALIVE_TIME_TOLERANCE = 3
 
 # 统一的header验证逻辑
 def _extract_headers(request: Request, required_headers: list) -> Dict[str, str]:
@@ -84,6 +97,42 @@ def _validate_signature(request: Request, headers: Dict[str, str], use_current_t
     
     return headers
 
+def _validate_keep_alive_signature(request: Request, headers: Dict[str, str]) -> Dict[str, str]:
+    """验证保活请求签名 - 支持3秒时间容差"""
+    signature = request.headers.get("x-signature")
+    headers["x-signature"] = signature or ""
+    
+    if not signature:
+        log.warning("保活请求未提供签名")
+        headers["signature_verified"] = "false"
+        return headers
+    
+    device_id = headers.get("x-device-id")
+    event_type = headers.get("x-event-type")
+    
+    if not all([device_id, event_type]):
+        log.warning("保活请求签名验证所需的header字段不完整")
+        headers["signature_verified"] = "false"
+        return headers
+    
+    # 获取当前时间戳（毫秒）
+    current_timestamp_ms = int(time.time() * 1000)
+    
+    # 尝试验证前后3秒范围内的时间戳
+    for time_offset in range(-KEEP_ALIVE_TIME_TOLERANCE, KEEP_ALIVE_TIME_TOLERANCE + 1):
+        test_timestamp = str(current_timestamp_ms + time_offset * 1000)
+        if verify_signature(device_id, event_type, test_timestamp, signature):
+            headers["signature_verified"] = "true"
+            headers["verified_timestamp"] = test_timestamp
+            headers["time_offset_seconds"] = str(time_offset)
+            log.debug(f"保活请求签名验证成功: {signature}, 时间偏移: {time_offset}秒")
+            return headers
+    
+    # 如果所有时间戳都验证失败
+    headers["signature_verified"] = "false"
+    #log.warning(f"保活请求签名验证失败: {signature}, 已尝试±{KEEP_ALIVE_TIME_TOLERANCE}秒范围")
+    return headers
+
 # 各类header验证函数
 async def validate_headers(request: Request) -> Dict[str, str]:
     """验证设备事件header"""
@@ -96,9 +145,9 @@ async def validate_device_status_headers(request: Request) -> Dict[str, str]:
     return _validate_signature(request, headers, use_current_timestamp=True)
 
 async def validate_keep_alive_headers(request: Request) -> Dict[str, str]:
-    """验证保活header"""
+    """验证保活header - 使用特殊的时间容差验证"""
     headers = _extract_headers(request, REQUIRED_KEEPALIVE_HEADERS)
-    return _validate_signature(request, headers, use_current_timestamp=True)
+    return _validate_keep_alive_signature(request, headers)
 
 # 设备信息记录
 def log_device_info(headers: Dict[str, str]) -> None:
@@ -188,16 +237,68 @@ async def process_keep_alive(headers: Dict[str, str]) -> JSONResponse:
         device_id = headers.get('x-device-id', 'Unknown')
         beijing_now = get_beijing_now()
         
-        log.info(f"收到保活请求 - 设备ID: {device_id}, 时间: {beijing_now.strftime('%Y-%m-%d %H:%M:%S')}")
+        # 记录时间偏移信息（如果有的话）
+        time_offset = headers.get('time_offset_seconds')
+        verified_timestamp = headers.get('verified_timestamp')
+        client_estimated_timestamp = headers.get('client_estimated_timestamp')
         
+        log_message = f"收到保活请求 - 设备ID: {device_id}, 时间: {beijing_now.strftime('%Y-%m-%d %H:%M:%S')}"
+        if time_offset:
+            log_message += f", 签名时间偏移: {time_offset}秒"
+            if client_estimated_timestamp:
+                client_time = datetime.fromtimestamp(int(client_estimated_timestamp) / 1000, BEIJING_TZ)
+                log_message += f", 客户端估计时间: {client_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        
+        log.info(log_message)
+        
+        # 更新保活状态
         update_keep_alive_status(device_id)
         
-        return _create_success_response("保活请求处理成功", {
+        # 注册到保活管理器
+        if device_id != 'Unknown':
+            register_device_alive(device_id)
+        
+        response_data = {
             "device_id": device_id,
             "server_time": beijing_now.strftime("%Y-%m-%d %H:%M:%S"),
+            "server_timestamp_ms": int(beijing_now.timestamp() * 1000),
             "timezone": "Asia/Shanghai",
             "signature_verified": headers.get('signature_verified') == 'true'
-        })
+        }
+        
+        if headers.get('signature_verified') == 'true':
+            if time_offset and verified_timestamp:
+                client_timestamp_ms = int(verified_timestamp)
+                server_timestamp_ms = int(beijing_now.timestamp() * 1000)
+                time_diff_ms = server_timestamp_ms - client_timestamp_ms
+                
+                response_data["time_sync_info"] = {
+                    "server_timestamp_ms": server_timestamp_ms,
+                    "client_estimated_timestamp_ms": client_timestamp_ms,
+                    "time_offset_seconds": int(time_offset),
+                    "time_difference_ms": time_diff_ms,
+                    "time_difference_seconds": round(time_diff_ms / 1000, 3),
+                    "tolerance_applied": f"±{KEEP_ALIVE_TIME_TOLERANCE}秒",
+                    "sync_status": "正常" if abs(int(time_offset)) <= 1 else "存在时差"
+                }
+            else:
+                response_data["time_sync_info"] = {
+                    "server_timestamp_ms": int(beijing_now.timestamp() * 1000),
+                    "tolerance_applied": f"±{KEEP_ALIVE_TIME_TOLERANCE}秒",
+                    "sync_status": "无时间偏移"
+                }
+        else:
+            # 签名验证失败时，提供调试信息
+            debug_info = headers.get('debug_info', {})
+            if debug_info:
+                response_data["debug_info"] = debug_info
+        
+        return _create_success_response("保活请求处理成功", response_data)
+        
+    except Exception as e:
+        log.exception(f"处理保活请求失败: {e}")
+        return _create_error_response(500, 101, f"处理保活请求失败: {str(e)}")
+
         
     except Exception as e:
         log.exception(f"处理保活请求失败: {e}")
@@ -255,7 +356,6 @@ async def receive_device_event(
     - 维护设备当前状态（是否锁定）
     - 按北京时间日期自动切换记录
     """
-    
     # 验证Content-Type
     error_response = _validate_content_type(content_type)
     if error_response:
@@ -288,11 +388,14 @@ async def receive_keep_alive(
     
     功能：
     - 记录设备最后活跃时间
-    - 验证设备签名
-    - 返回服务器时间
-    """
+    - 验证设备签名（支持±3秒时间容差）
+    - 返回服务器时间和时间同步信息
     
-    # 验证Content-Type和事件类型
+    签名验证特殊处理：
+    - 由于保活请求不携带时间戳，使用服务器当前时间±3秒范围验证签名
+    - 这样可以容忍客户端与服务器之间的时间差异
+    """
+
     error_response = _validate_content_type(content_type)
     if error_response:
         return error_response
@@ -301,7 +404,7 @@ async def receive_keep_alive(
     if error_response:
         return error_response
     
-    # 验证headers
+    # 验证headers（使用特殊的保活签名验证逻辑）
     headers = await validate_keep_alive_headers(request)
     
     return await process_keep_alive(headers)
@@ -324,7 +427,6 @@ async def receive_device_status(
     - 验证设备签名
     - 存储状态历史记录
     """
-    
     # 验证Content-Type和事件类型
     error_response = _validate_content_type(content_type)
     if error_response:
@@ -411,6 +513,40 @@ async def get_device_status(device_id: str):
     except Exception as e:
         log.exception(f"获取设备状态失败: {e}")
         return _create_error_response(500, 101, f"获取设备状态失败: {str(e)}")
+
+@router.get("/alive-manager/status")
+async def get_alive_manager_status_api():
+    """获取保活管理器状态"""
+    try:
+        status = get_alive_manager_status()
+        return _create_success_response("获取保活管理器状态成功", status)
+    except Exception as e:
+        log.exception(f"获取保活管理器状态失败: {e}")
+        return _create_error_response(500, 101, f"获取保活管理器状态失败: {str(e)}")
+
+@router.post("/alive-manager/check/{device_id}")
+async def force_check_device_alive_api(device_id: str):
+    """强制检查设备保活状态"""
+    try:
+        result = force_check_device_alive(device_id)
+        if "error" in result:
+            return _create_error_response(400, 100, result["error"])
+        return _create_success_response("强制检查设备保活状态成功", result)
+    except Exception as e:
+        log.exception(f"强制检查设备保活状态失败: {e}")
+        return _create_error_response(500, 101, f"强制检查设备保活状态失败: {str(e)}")
+
+@router.get("/alive-manager/device/{device_id}")
+async def get_device_alive_info_api(device_id: str):
+    """获取设备保活详细信息"""
+    try:
+        info = get_device_alive_info(device_id)
+        if "error" in info:
+            return _create_error_response(404, 100, info["error"])
+        return _create_success_response("获取设备保活信息成功", info)
+    except Exception as e:
+        log.exception(f"获取设备保活信息失败: {e}")
+        return _create_error_response(500, 101, f"获取设备保活信息失败: {str(e)}")
 
 def register_routes(app):
     """注册路由"""

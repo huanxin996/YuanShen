@@ -2,11 +2,12 @@ import os, importlib, re,time
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, APIRouter, Request
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, PlainTextResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from methods.globalvar import GlobalVars
-from typing import Dict, Set, List, Tuple, Pattern, Optional
+from typing import Dict, Set, List, Tuple, Pattern, Optional, Any
+from methods.token_manner import verify_api_token, token_manager
 from loguru import logger as log
 from config import project_root,favicon_path
 
@@ -109,81 +110,85 @@ class RouteProtectionMiddleware(BaseHTTPMiddleware):
             log.warning(f"访问被禁用的路由: {path}")
             return PlainTextResponse("该API已被禁用，请使用其他API", status_code=403)
         
-        if path in self.allowed_paths:
-            response = await call_next(request)
-            
-            if (not path.startswith("/admin") and 
-                not path.startswith("/static") and 
-                not path.endswith((".css", ".js", ".ico", ".png", ".jpg", ".jpeg", ".gif"))):
+        path_allowed = False
+        original_path = path
 
-                today_str = time.strftime("%Y-%m-%d")
-                
-                api_count_key = f"api_count:{path}"
-                current_count = GlobalVars.get_from_table("api_stats", api_count_key, 0)
-                GlobalVars.set_to_table("api_stats", api_count_key, current_count + 1)
-                
-                api_daily_key = f"api_daily_stats:{path}"
-                daily_stats = GlobalVars.get_from_table("api_stats", api_daily_key, {})
-                if today_str in daily_stats:
-                    daily_stats[today_str] += 1
-                else:
-                    daily_stats[today_str] = 1
-                GlobalVars.set_to_table("api_stats", api_daily_key, daily_stats)
-                
-                total_daily_key = "api_total_daily_stats"
-                total_daily_stats = GlobalVars.get_from_table("api_stats", total_daily_key, {})
-                if today_str in total_daily_stats:
-                    total_daily_stats[today_str] += 1
-                else:
-                    total_daily_stats[today_str] = 1
-                GlobalVars.set_to_table("api_stats", total_daily_key, total_daily_stats)
-                
-                log.debug(f"API访问计数: {path} -> {current_count + 1}, 今日: {daily_stats.get(today_str, 0)}")
-            
-            return response
-        
-        for pattern, original_path in self.pattern_paths:
-            if pattern.match(path):
-                response = await call_next(request)
-                
-                if (not original_path.startswith("/admin") and 
-                    not original_path.startswith("/static")):
-                    
-                    if not GlobalVars.table_exists("api_stats"):
-                        log.info("创建API统计表")
-                        GlobalVars.create_table("api_stats")
-                    
-                    today_str = time.strftime("%Y-%m-%d")
-                    
-                    api_count_key = f"api_count:{original_path}"
-                    current_count = GlobalVars.get_from_table("api_stats", api_count_key, 0)
-                    GlobalVars.set_to_table("api_stats", api_count_key, current_count + 1)
-                    
-                    api_daily_key = f"api_daily_stats:{original_path}"
-                    daily_stats = GlobalVars.get_from_table("api_stats", api_daily_key, {})
-                    if today_str in daily_stats:
-                        daily_stats[today_str] += 1
-                    else:
-                        daily_stats[today_str] = 1
-                    GlobalVars.set_to_table("api_stats", api_daily_key, daily_stats)
-                    
-                    total_daily_key = "api_total_daily_stats"
-                    total_daily_stats = GlobalVars.get_from_table("api_stats", total_daily_key, {})
-                    if today_str in total_daily_stats:
-                        total_daily_stats[today_str] += 1
-                    else:
-                        total_daily_stats[today_str] = 1
-                    GlobalVars.set_to_table("api_stats", total_daily_key, total_daily_stats)
-                    
-                    log.debug(f"参数化API访问计数: {original_path} -> {current_count + 1}, 今日: {daily_stats.get(today_str, 0)}")
-                
-                return response
-        
-        log.warning(f"拒绝访问未注册路径: {path} (方法: {request.method})")
-        return PlainTextResponse(
-            "你瞅啥，不要乱访问好不好？",
-            status_code=403
+        if path in self.allowed_paths:
+            path_allowed = True
+        else:
+            # 检查参数化路径
+            for pattern, pattern_original_path in self.pattern_paths:
+                if pattern.match(path):
+                    path_allowed = True
+                    original_path = pattern_original_path
+                    break
+        if not path_allowed:
+            log.warning(f"拒绝访问未注册路径: {path} (方法: {request.method})")
+            return PlainTextResponse("你瞅啥，不要乱访问好不好？", status_code=403)
+
+        should_verify_token = (
+            not path.startswith("/admin") and 
+            not path.startswith("/static") and 
+            not path.endswith((".css", ".js", ".ico", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".woff", ".woff2", ".ttf")) and
+            path != "/favicon.ico" and
+            request.method in ["GET", "POST", "PUT", "DELETE", "PATCH"]
         )
+
+        if should_verify_token:
+            # 进行token验证
+            is_valid, message, debug_info = verify_api_token(original_path, request, use_signature=False)
+            
+            if not is_valid:
+                log.warning(f"Token验证失败: {path} - {message}")
+                return JSONResponse(
+                    status_code=401,
+                    content={
+                        "returnCode": 401,
+                        "msg": f"Token验证失败: {message}",
+                        "data": {
+                            "error_type": "token_verification_failed",
+                            "api_path": original_path,
+                            "debug_info": debug_info if log.level.no <= 10 else None  # 仅在DEBUG模式显示调试信息
+                        }
+                    }
+                )
+            else:
+                # Token验证成功，记录日志
+                if debug_info.get("token_enabled"):
+                    log.info(f"Token验证成功: {path}")
+        
+        # 处理请求
+        response = await call_next(request)
+        if (not path.startswith("/admin") and 
+            not path.startswith("/static") and 
+            not path.endswith((".css", ".js", ".ico", ".png", ".jpg", ".jpeg", ".gif"))):
+
+            today_str = time.strftime("%Y-%m-%d")
+            
+            api_count_key = f"api_count:{original_path}"
+            current_count = GlobalVars.get_from_table("api_stats", api_count_key, 0)
+            GlobalVars.set_to_table("api_stats", api_count_key, current_count + 1)
+            
+            api_daily_key = f"api_daily_stats:{original_path}"
+            daily_stats = GlobalVars.get_from_table("api_stats", api_daily_key, {})
+            if today_str in daily_stats:
+                daily_stats[today_str] += 1
+            else:
+                daily_stats[today_str] = 1
+            GlobalVars.set_to_table("api_stats", api_daily_key, daily_stats)
+            
+            total_daily_key = "api_total_daily_stats"
+            total_daily_stats = GlobalVars.get_from_table("api_stats", total_daily_key, {})
+            if today_str in total_daily_stats:
+                total_daily_stats[today_str] += 1
+            else:
+                total_daily_stats[today_str] = 1
+            GlobalVars.set_to_table("api_stats", total_daily_key, total_daily_stats)
+            
+            log.debug(f"API访问计数: {path} -> {current_count + 1}, 今日: {daily_stats.get(today_str, 0)}")
+        
+        return response
+
 
 
 class RouteManager:
@@ -542,5 +547,29 @@ class RouteManager:
     def _count_routes(self, app: FastAPI) -> int:
         """计算应用中的路由数量"""
         return len(app.routes)
+    
+    def enable_token_for_api(self, api_path: str) -> None:
+        """为指定API启用token验证"""
+        token_manager.enable_token_for_api(api_path)
+
+    def disable_token_for_api(self, api_path: str) -> None:
+        """为指定API禁用token验证"""
+        token_manager.disable_token_for_api(api_path)
+
+    def set_api_token(self, api_path: str, token: str, expire_ms: Optional[int] = None) -> None:
+        """为指定API设置自定义token"""
+        token_manager.set_api_token(api_path, token, expire_ms)
+
+    def generate_api_token(self, api_path: str, length: int = 32) -> str:
+        """为指定API生成新的随机token"""
+        return token_manager.generate_token(api_path, length)
+
+    def get_token_configs(self) -> Dict[str, Any]:
+        """获取所有API的token配置"""
+        return token_manager.get_all_configs()
+
+    def get_token_usage_stats(self, api_path: Optional[str] = None, days: int = 7) -> Dict[str, Any]:
+        """获取token使用统计"""
+        return token_manager.get_token_usage_stats(api_path, days)
 
 route_manager = RouteManager()

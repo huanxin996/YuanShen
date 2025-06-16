@@ -86,7 +86,7 @@ async def run_server_async():
     config = uvicorn.Config(
         app,
         host="0.0.0.0",
-        port=9091,
+        port=9090,
         log_level="info",
         reload=False,
         log_config=custom_log_config,

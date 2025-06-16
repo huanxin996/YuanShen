@@ -232,12 +232,12 @@ async def create_rating_ranking(item: Rating_rankingBase):
 
 
 
-def register_routes(app: FastAPI):
-    log.info(f"注册maimai50路由，前缀：{router.prefix}")
+#def register_routes(app: FastAPI):
+#    log.info(f"注册maimai50路由，前缀：{router.prefix}")
     #for route in router.routes:
     #    if hasattr(route, "path"):
     #        log.info(f"路由：{route.path}，方法：{route.methods if hasattr(route, 'methods') else '未知'}")
     
-    app.include_router(router)
+    #app.include_router(router)
 
 

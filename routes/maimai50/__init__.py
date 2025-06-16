@@ -3,7 +3,7 @@ import threading
 from api.maimai50.maimaidx_update_plate import update_rating_table, update_plate_table
 from api.maimai50.maimaidx_music import initialize_maimai_data
 from loguru import logger as log
-
+"""
 def start_background_tasks():
     async def init_and_update():
         try:
@@ -33,6 +33,6 @@ def start_background_tasks():
 
     t = threading.Thread(target=run_async_loop, daemon=True)
     t.start()
+"""
 
-
-start_background_tasks()
+#start_background_tasks()

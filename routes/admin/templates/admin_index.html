@@ -14,42 +14,239 @@
     </div>
     
     <div class="table-container">
-        <form method='post' action="/admin/action">
-            <table>
-                <thead>
-                    <tr>
-                        <th class="col-path">路由</th>
-                        <th class="col-status">状态</th>
-                        <th class="col-count">访问量</th>
-                        <th class="col-action">操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for path, status, action, btn_class, btn_text, access_count in route_list %}
-                    <tr>
-                        <td class="path-cell">{{ path }}</td>
-                        <td class="status-cell">
-                            <span class="status-badge {{ 'disabled' if status == '禁用' else 'enabled' }}">
-                                {{ status }}
-                            </span>
-                        </td>
-                        <td class="count-cell">{{ access_count }}</td>
-                        <td class="action-cell">
-                            <button class="{{ btn_class }}" name="action" value="{{ action }}:{{ path }}" type="submit">
-                                <i class="fas fa-{{ 'check-circle' if btn_text == '启用' else 'ban' }}"></i> {{ btn_text }}
+        <table>
+            <thead>
+                <tr>
+                    <th class="col-path">路由</th>
+                    <th class="col-status">状态</th>
+                    <th class="col-token">Token配置</th>
+                    <th class="col-action">操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for route in route_list %}
+                <tr data-api-path="{{ route.path }}">
+                    <td class="path-cell">{{ route.path }}</td>
+                    <td class="status-cell">
+                        <span class="status-badge {{ 'disabled' if route.status == '禁用' else 'enabled' }}">
+                            {{ route.status }}
+                        </span>
+                    </td>
+                    <td class="token-cell">
+                        <span class="token-badge {{ route.token_class }}">
+                            {{ route.token_display }}
+                        </span>
+                        {% if route.token_enabled %}
+                        <small class="token-expire">过期: {{ (route.expire_time_ms / 1000)|round|int }}s</small>
+                        {% endif %}
+                    </td>
+                    <td class="action-cell">
+                        <div class="action-buttons">
+                            <!-- 路由启用/禁用按钮 -->
+                            <form method='post' action="/admin/action" style="display: inline;">
+                                <button class="{{ route.btn_class }}" name="action" value="{{ route.action }}:{{ route.path }}" type="submit" title="{{ route.btn_text }}路由">
+                                    <i class="fas fa-{{ 'check-circle' if route.btn_text == '启用' else 'ban' }}"></i>
+                                </button>
+                            </form>
+                            
+                            <!-- Token设置按钮 -->
+                            <button class="token-btn" onclick="openTokenModal('{{ route.path }}')" title="Token设置">
+                                <i class="fas fa-key"></i>
                             </button>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                    {% if not route_list %}
-                    <tr>
-                        <td colspan="4" class="no-data">未找到匹配的路由</td>
-                    </tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not route_list %}
+                <tr>
+                    <td colspan="4" class="no-data">未找到匹配的路由</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
     </div>
 </div>
+
+<!-- Token设置模态框 -->
+<div id="tokenModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-key"></i> Token设置</h3>
+            <span class="close" onclick="closeTokenModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="tokenForm" method="post" action="/admin/token/action">
+                <input type="hidden" id="modalApiPath" name="api_path" value="">
+                <input type="hidden" id="tokenAction" name="token_action" value="">
+                
+                <div class="form-group">
+                    <label>API路径:</label>
+                    <span id="modalApiPathDisplay"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label>当前状态:</label>
+                    <span id="modalCurrentStatus" class="status-indicator"></span>
+                </div>
+                
+                <div class="form-group">
+                    <label for="customToken">自定义Token:</label>
+                    <div class="input-group">
+                        <input type="text" id="customToken" name="custom_token" placeholder="留空使用默认Token">
+                        <button type="button" class="generate-btn" onclick="generateRandomToken()">
+                            <i class="fas fa-random"></i> 生成
+                        </button>
+                    </div>
+                    <small class="help-text">留空将使用系统默认Token</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="expireTime">过期时间 (毫秒):</label>
+                    <input type="number" id="expireTime" name="expire_time" value="{{ default_expire }}" min="1000" step="1000">
+                    <small class="help-text">默认: {{ (default_expire / 1000)|round|int }} 秒</small>
+                </div>
+                
+                <div class="button-group">
+                    <button type="button" class="btn btn-success" onclick="setTokenAction('enable')">
+                        <i class="fas fa-check"></i> 启用Token验证
+                    </button>
+                    <button type="button" class="btn btn-warning" onclick="setTokenAction('set_custom')">
+                        <i class="fas fa-edit"></i> 设置自定义Token
+                    </button>
+                    <button type="button" class="btn btn-info" onclick="setTokenAction('generate')">
+                        <i class="fas fa-plus"></i> 生成新Token
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="setTokenAction('remove_custom')">
+                        <i class="fas fa-undo"></i> 使用默认Token
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="setTokenAction('disable')">
+                        <i class="fas fa-times"></i> 禁用Token验证
+                    </button>
+                </div>
+                
+                <div class="current-info" id="currentTokenInfo">
+                    <!-- 当前token信息将通过JavaScript动态填充 -->
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Token模态框相关JavaScript
+let currentApiPath = '';
+
+async function openTokenModal(apiPath) {
+    currentApiPath = apiPath;
+    document.getElementById('modalApiPath').value = apiPath;
+    document.getElementById('modalApiPathDisplay').textContent = apiPath;
+    
+    // 获取当前token信息
+    try {
+        const response = await fetch(`/admin/token/info${apiPath}`);
+        const data = await response.json();
+        
+        updateModalStatus(data);
+        updateCurrentTokenInfo(data);
+        
+    } catch (error) {
+        console.error('获取token信息失败:', error);
+    }
+    
+    document.getElementById('tokenModal').style.display = 'block';
+}
+
+function closeTokenModal() {
+    document.getElementById('tokenModal').style.display = 'none';
+    currentApiPath = '';
+}
+
+function updateModalStatus(data) {
+    const statusElement = document.getElementById('modalCurrentStatus');
+    if (data.token_enabled) {
+        if (data.has_custom_token) {
+            statusElement.innerHTML = '<span class="badge custom">已启用 (自定义Token)</span>';
+        } else {
+            statusElement.innerHTML = '<span class="badge default">已启用 (默认Token)</span>';
+        }
+    } else {
+        statusElement.innerHTML = '<span class="badge disabled">未启用</span>';
+    }
+    
+    // 更新表单字段
+    document.getElementById('customToken').value = data.custom_token || '';
+    document.getElementById('expireTime').value = data.expire_time_ms;
+}
+
+function updateCurrentTokenInfo(data) {
+    const infoElement = document.getElementById('currentTokenInfo');
+    
+    let infoHtml = '<div class="info-section"><h4>当前配置信息</h4>';
+    
+    if (data.token_enabled) {
+        infoHtml += `
+            <p><strong>Token状态:</strong> <span class="text-success">已启用</span></p>
+            <p><strong>当前Token:</strong> <code>${data.has_custom_token ? data.custom_token : data.default_token}</code></p>
+            <p><strong>Token类型:</strong> ${data.has_custom_token ? '自定义' : '默认'}</p>
+            <p><strong>过期时间:</strong> ${Math.round(data.expire_time_ms / 1000)} 秒</p>
+        `;
+    } else {
+        infoHtml += '<p><strong>Token状态:</strong> <span class="text-danger">未启用</span></p>';
+    }
+    
+    infoHtml += '</div>';
+    infoElement.innerHTML = infoHtml;
+}
+
+function generateRandomToken() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let token = '';
+    for (let i = 0; i < 32; i++) {
+        token += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('customToken').value = token;
+}
+
+function setTokenAction(action) {
+    document.getElementById('tokenAction').value = action;
+    
+    // 根据不同操作显示确认信息
+    let confirmMessage = '';
+    switch (action) {
+        case 'enable':
+            confirmMessage = '确定要启用Token验证吗？';
+            break;
+        case 'disable':
+            confirmMessage = '确定要禁用Token验证吗？这将允许无需token访问此API。';
+            break;
+        case 'set_custom':
+            const customToken = document.getElementById('customToken').value;
+            if (!customToken) {
+                alert('请输入自定义Token！');
+                return;
+            }
+            confirmMessage = `确定要设置自定义Token为: ${customToken} 吗？`;
+            break;
+        case 'generate':
+            confirmMessage = '确定要生成新的随机Token吗？这将替换当前Token。';
+            break;
+        case 'remove_custom':
+            confirmMessage = '确定要移除自定义Token并使用默认Token吗？';
+            break;
+    }
+    
+    if (confirm(confirmMessage)) {
+        document.getElementById('tokenForm').submit();
+    }
+}
+
+// 点击模态框外部关闭
+window.onclick = function(event) {
+    const modal = document.getElementById('tokenModal');
+    if (event.target === modal) {
+        closeTokenModal();
+    }
+}
+</script>
 
 {% include 'admin_footer.html' %}
