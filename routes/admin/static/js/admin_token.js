@@ -1,6 +1,7 @@
 // Token模态框相关JavaScript
 let currentApiPath = '';
 let modalCloseTimeout = null;
+let isDragging = false;
 
 async function openTokenModal(apiPath) {
     currentApiPath = apiPath;
@@ -285,7 +286,7 @@ function updateCurrentTokenInfo(data) {
             infoHtml += `
                 <div style="margin-top: 15px;">
                     <p><strong><i class="fas fa-key"></i> 完整Token:</strong></p>
-                    <textarea readonly>${currentToken}</textarea>
+                    <textarea readonly class="token-display-textarea">${currentToken}</textarea>
                 </div>
             `;
         }
@@ -557,10 +558,10 @@ function showSubmittingState() {
 
 // 设置模态框事件监听器
 function setupModalEvents() {
-    // 点击模态框外部关闭
+    // 点击模态框外部关闭 - 优化事件处理
     window.addEventListener('click', function(event) {
         const modal = document.getElementById('tokenModal');
-        if (event.target === modal) {
+        if (event.target === modal && !isDragging) {
             closeTokenModal();
         }
     });
@@ -573,6 +574,35 @@ function setupModalEvents() {
                 closeTokenModal();
             }
         }
+    });
+    
+    // 防止文本选择时误触关闭模态框
+    document.addEventListener('selectstart', function(event) {
+        if (event.target.closest('.modal-content')) {
+            isDragging = true;
+            setTimeout(() => {
+                isDragging = false;
+            }, 100);
+        }
+    });
+    
+    // 监听鼠标拖拽事件
+    document.addEventListener('mousedown', function(event) {
+        if (event.target.closest('.token-display-textarea, .info-section code, .api-path-display')) {
+            isDragging = false;
+        }
+    });
+    
+    document.addEventListener('mousemove', function(event) {
+        if (event.buttons === 1 && event.target.closest('.modal-content')) {
+            isDragging = true;
+        }
+    });
+    
+    document.addEventListener('mouseup', function() {
+        setTimeout(() => {
+            isDragging = false;
+        }, 50);
     });
 }
 

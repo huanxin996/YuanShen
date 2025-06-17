@@ -386,6 +386,7 @@ def verify_api_token(api_path: str, request, use_signature: bool = False) -> Tup
         return True, "API未启用token验证", debug_info
     
     if not token:
+        token_manager._record_token_usage(api_path, "缺少API token", False, "缺少API token，签名验证失败")
         return False, "缺少API token", debug_info
     
     if use_signature:
